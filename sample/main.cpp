@@ -3,7 +3,6 @@
 
 int main(int argc, char* argv[])
 {
-
-	printf("Hello openvx-world!!!\n");
-	return 0;
+    printf("Hello openvx-world!!!\n");
+    return 0;
 }

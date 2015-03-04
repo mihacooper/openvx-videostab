@@ -1,1 +1,0 @@
-/usr/bin/cc  -fPIC -fPIC -Wno-unused-but-set-variable -Wno-unused-variable   -shared -Wl,-soname,libvxu.so -o libvxu.so CMakeFiles/vxu.dir/vx_utility.c.o ../../../bin/libopenvx.so ../helper/libopenvx-helper.a ../debug/libvx_debug.a -ldl -lm -lpthread -lrt -Wl,-rpath,/home/mihacooper/projects/study/openvx_sample/bin: 

@@ -1,2 +1,0 @@
-/usr/bin/ar cr libopenvx-debug_k-lib.a  CMakeFiles/openvx-debug_k-lib.dir/d_copy.c.o CMakeFiles/openvx-debug_k-lib.dir/d_file.c.o
-/usr/bin/ranlib libopenvx-debug_k-lib.a

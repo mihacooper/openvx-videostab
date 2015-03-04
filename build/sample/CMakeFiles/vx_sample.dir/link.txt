@@ -1,1 +1,0 @@
-/usr/bin/g++-4.8   -fPIC -Wno-unused-but-set-variable -Wno-unused-variable    CMakeFiles/vx_sample.dir/main.cpp.o  -o ../../bin/vx_sample -rdynamic 

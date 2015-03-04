@@ -1,2 +1,0 @@
-/usr/bin/ar cr libopenvx-helper.a  CMakeFiles/openvx-helper.dir/vx_helper.c.o
-/usr/bin/ranlib libopenvx-helper.a

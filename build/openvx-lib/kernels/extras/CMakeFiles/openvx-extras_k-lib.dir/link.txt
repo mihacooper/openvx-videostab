@@ -1,2 +1,0 @@
-/usr/bin/ar cr libopenvx-extras_k-lib.a  CMakeFiles/openvx-extras_k-lib.dir/e_filter.c.o CMakeFiles/openvx-extras_k-lib.dir/e_nonmax.c.o
-/usr/bin/ranlib libopenvx-extras_k-lib.a

@@ -1,2 +1,0 @@
-/usr/bin/ar cr libopenvx-extras-lib.a  CMakeFiles/openvx-extras-lib.dir/vx_extras_lib.c.o
-/usr/bin/ranlib libopenvx-extras-lib.a
