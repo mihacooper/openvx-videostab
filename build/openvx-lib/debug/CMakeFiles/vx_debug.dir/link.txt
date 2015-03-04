@@ -1,0 +1,2 @@
+/usr/bin/ar cr libvx_debug.a  CMakeFiles/vx_debug.dir/vx_debug.c.o
+/usr/bin/ranlib libvx_debug.a

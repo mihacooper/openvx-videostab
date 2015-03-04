@@ -1,0 +1,13 @@
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/framework/CMakeFiles/openvx.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/targets/c_model/CMakeFiles/openvx-c_model.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/kernels/c_model/CMakeFiles/openvx-c_model-lib.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/libraries/debug/CMakeFiles/openvx-debug.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/libraries/debug/CMakeFiles/openvx-debug-lib.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/kernels/debug/CMakeFiles/openvx-debug_k-lib.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/libraries/extras/CMakeFiles/openvx-extras.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/libraries/extras/CMakeFiles/openvx-extras-lib.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/kernels/extras/CMakeFiles/openvx-extras_k-lib.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/helper/CMakeFiles/openvx-helper.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/debug/CMakeFiles/vx_debug.dir
+/home/mihacooper/projects/study/openvx_sample/build/sample/CMakeFiles/vx_sample.dir
+/home/mihacooper/projects/study/openvx_sample/build/openvx-lib/vxu/CMakeFiles/vxu.dir
