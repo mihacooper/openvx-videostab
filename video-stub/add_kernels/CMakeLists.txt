@@ -7,7 +7,7 @@ include_directories( BEFORE
 
 FIND_SOURCES()
 
-add_definitions( -DVX_IAP_SAMPLE_KERNELS_LIBRARY )
+add_definitions( -DVX_ADD_KERNELS_LIBRARY )
 
 add_library(${TARGET_NAME} SHARED ${SOURCE_FILES})
 
