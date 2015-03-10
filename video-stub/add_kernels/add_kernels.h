@@ -27,7 +27,7 @@
 
 #define VX_ADD_KERNEL_NAME_RGB_TO_GRAY     "org.openvx.add.rgb_to_gray"
 
-enum vx_kernel_iap_ext_e {
+enum vx_add_kernel_e {
     VX_ADD_KERNEL_RGB_TO_GRAY     = VX_KERNEL_BASE(VX_ID_INTEL, VX_ADD_LIBRARY) + 0x0,
 };
 
