@@ -27,7 +27,7 @@ export BIN_DIRECTORY=${PWD}/bin
 export BUILD_DIRECTORY=${PWD}/build
 export CMAKE_TOOLS_DIR=${PWD}/cmake-tools
 export CMAKE_FLAGS="-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8"
-export CXX_FLAGS="-fPIC -Wno-unused-but-set-variable -Wno-unused-variable"
+export CXX_FLAGS="-fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings"
 export C_FLAGS="$CXX_FLAGS" #-std=c99
 
 ############################################

@@ -33,5 +33,6 @@ include_directories( BEFORE
 FIND_SOURCES()
 
 add_library (${TARGET_NAME} SHARED ${SOURCE_FILES})
+set(LIBRARY_OUTPUT_PATH $ENV{BIN_DIRECTORY})
 
 target_link_libraries( ${TARGET_NAME} openvx-debug-lib openvx-extras-lib openvx-helper openvx-c_model-lib openvx vxu )
