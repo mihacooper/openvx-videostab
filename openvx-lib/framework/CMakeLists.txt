@@ -37,8 +37,8 @@ FIND_SOURCES()
 # add a target named ${TARGET_NAME}
 add_library (${TARGET_NAME} SHARED ${SOURCE_FILES})
 
-install(TARGETS ${TARGET_NAME} DESTINATION $ENV{BIN_DIRECTORY})
-set(LIBRARY_OUTPUT_PATH $ENV{BIN_DIRECTORY})
+install(TARGETS ${TARGET_NAME} DESTINATION $ENV{LIBRARY_DIRECTORY})
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
 set( LINK_ADDITIONAL )
 
@@ -47,7 +47,7 @@ if (NOT WIN32)
     list( APPEND LINK_ADDITIONAL pthread rt )
 endif (NOT WIN32)
 
-target_link_libraries( ${TARGET_NAME} openvx-helper vx_debug ${LINK_ADDITIONAL} )
+target_link_libraries( ${TARGET_NAME} ${LINK_ADDITIONAL} openvx-helper vx_debug )
 
 #install ( TARGETS ${TARGET_NAME} 
 #          RUNTIME DESTINATION bin

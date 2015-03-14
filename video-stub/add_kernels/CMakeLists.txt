@@ -11,6 +11,6 @@ add_definitions( -DVX_ADD_KERNELS_LIBRARY )
 
 add_library(${TARGET_NAME} SHARED ${SOURCE_FILES})
 
-set(LIBRARY_OUTPUT_PATH $ENV{BIN_DIRECTORY})
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
 target_link_libraries( ${TARGET_NAME} openvx )

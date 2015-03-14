@@ -30,9 +30,11 @@ include_directories( BEFORE
                      ${OPENVX_SOURCE_DIR}/kernels/debug )
 					 
 add_library (${TARGET_NAME_1} vx_debug_lib.c)
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
 FIND_SOURCES( vx_debug_lib.c )
 
 add_library (${TARGET_NAME_2} SHARED ${SOURCE_FILES})
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
 target_link_libraries( ${TARGET_NAME_2} openvx-helper openvx-debug_k-lib openvx )

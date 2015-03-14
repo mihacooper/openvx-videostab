@@ -33,3 +33,4 @@ FIND_SOURCES()
 add_library (${TARGET_NAME} ${SOURCE_FILES})
 
 target_link_libraries( ${TARGET_NAME} openvx )
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})

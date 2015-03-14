@@ -31,3 +31,4 @@ include_directories( BEFORE
 FIND_SOURCES()
 
 add_library (${TARGET_NAME} ${SOURCE_FILES})
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})

@@ -31,11 +31,13 @@ include_directories( BEFORE
                      ${OPENVX_SOURCE_DIR}/kernels/extras )
 
 add_library (${TARGET_NAME_1} vx_extras_lib.c)
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
 target_link_libraries( ${TARGET_NAME_1} openvx-helper )
 
 FIND_SOURCES( vx_extras_lib.c )
 
 add_library (${TARGET_NAME_2} SHARED ${SOURCE_FILES})
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
 target_link_libraries( ${TARGET_NAME_2} openvx-helper openvx-extras_k-lib openvx )

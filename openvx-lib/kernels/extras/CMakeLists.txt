@@ -32,6 +32,7 @@ FIND_SOURCES()
 
 # add a target named ${TARGET_NAME}
 add_library (${TARGET_NAME} ${SOURCE_FILES})
+set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
 install ( TARGETS ${TARGET_NAME} 
           RUNTIME DESTINATION bin

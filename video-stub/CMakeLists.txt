@@ -15,4 +15,4 @@ add_executable (${TARGET_NAME} ${SOURCE_FILES})
 
 set(EXECUTABLE_OUTPUT_PATH $ENV{BIN_DIRECTORY})
 
-target_link_libraries( ${TARGET_NAME} openvx ${OpenCV_LIBS} vx_add_kernels)
+target_link_libraries( ${TARGET_NAME} ${OpenCV_LIBS} openvx vx_add_kernels)
