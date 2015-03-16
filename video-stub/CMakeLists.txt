@@ -9,7 +9,7 @@ include_directories( BEFORE
 
 FIND_SOURCES()
 
-find_package( OpenCV REQUIRED )
+find_package(OpenCV REQUIRED core imgproc video highgui calib3d)
 
 add_executable (${TARGET_NAME} ${SOURCE_FILES})
 

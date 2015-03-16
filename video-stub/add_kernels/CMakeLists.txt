@@ -7,10 +7,12 @@ include_directories( BEFORE
 
 FIND_SOURCES()
 
+find_package(OpenCV REQUIRED core imgproc video highgui calib3d)
+
 add_definitions( -DVX_ADD_KERNELS_LIBRARY )
 
 add_library(${TARGET_NAME} SHARED ${SOURCE_FILES})
 
 set(LIBRARY_OUTPUT_PATH $ENV{LIBRARY_DIRECTORY})
 
-target_link_libraries( ${TARGET_NAME} openvx )
+target_link_libraries( ${TARGET_NAME} ${OpenCV_LIBS} openvx )

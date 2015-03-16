@@ -1,9 +1,13 @@
 #include "add_kernels.h"
 
 extern vx_kernel_description_t add_rgb_to_gray_kernel;
+extern vx_kernel_description_t add_find_warp_kernel;
+extern vx_kernel_description_t add_warp_perspective_rgb_kernel;
 
 static vx_kernel_description_t* add_kernels[] = {
     &add_rgb_to_gray_kernel,
+    &add_find_warp_kernel,
+    &add_warp_perspective_rgb_kernel
 };
 
 static vx_uint32 num_add_kernels = dimof(add_kernels);

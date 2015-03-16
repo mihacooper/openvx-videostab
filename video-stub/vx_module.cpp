@@ -39,7 +39,8 @@ inline vx_int32 max(vx_int32 left, vx_int32 right)
 }
 
 VXVideoStub::VXVideoStub() :
-    m_CurImageId(0), m_NumImages(0), m_Images(NULL), m_Matrices(NULL), m_OptFlowGraph(NULL)
+    m_CurImageId(0), m_NumImages(0), m_Images(NULL),
+    m_Matrices(NULL), m_OptFlowGraph(NULL), m_WarpGraph(NULL), m_ImageAdded(vx_false_e)
 {
     m_Context = vxCreateContext();
     if(m_Context == NULL)
@@ -67,6 +68,7 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     if(m_Context == NULL)
         return VX_FAILURE;
 
+    int i;
     m_NumImages = gauss_size;
     /*****FAST9 params*****/
     vx_float32 fast_thresh = 50.f; // threshold parameter of FAST9
@@ -83,9 +85,20 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     vx_float32 optflow_estimate = 1;
     vx_uint32 optflow_max_iter = 100;
     vx_uint32 optflow_init_estimate = vx_false_e;
+
+    vx_float32 sigma = (m_NumImages - 2) * 0.35;
+    vx_float32 matr_coeffs[4];
+    for (i = -1; i <= 1; ++i)
+        matr_coeffs[i + 1] = ( exp(-i * i / (2.f * sigma * sigma)) );
+    vx_float32 sum = 0.;
+    for (i = 0; i < 3; ++i)
+        sum += matr_coeffs[i];
+    sum = 1. / sum;
+    for (i = 0; i < 3; ++i)
+        matr_coeffs[i] /= sum;
     /******End of params******/
 
-    m_OptFlowGraph   = vxCreateGraph(m_Context);
+    m_OptFlowGraph = vxCreateGraph(m_Context);
     CHECK_NULL(m_OptFlowGraph);
 
     /***     Create images   ***/
@@ -100,6 +113,8 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     /***    End of images    ***/
 
     /***    Create objects    ***/
+    vx_matrix tmp_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+    m_Matrices = vxCreateDelay(m_Context, (vx_reference)tmp_matr, gauss_size - 1);
     vx_scalar  fast_thresh_s     = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &fast_thresh);
     vx_scalar  fast_num_corn_s   = vxCreateScalar(m_Context, VX_TYPE_UINT32, &corners_num);
     vx_array   fast_found_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, MAX_FOUNDED_CORNERS);
@@ -120,8 +135,8 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL(pyramid_2);
     /***    End of objects    ***/
 
-    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 0), gray_image_1) );
-    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 1), gray_image_2) );
+    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages - 2), gray_image_1) );
+    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages - 1), gray_image_2) );
     CHECK_NULL( vxFastCornersNode(m_OptFlowGraph, gray_image_1, fast_thresh_s, vx_true_e, fast_found_corn_s, fast_num_corn_s) );
 
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_1, pyramid_1) );
@@ -129,15 +144,29 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL( vxOpticalFlowPyrLKNode(m_OptFlowGraph, pyramid_1, pyramid_2, fast_found_corn_s,
                                        optf_extim_corn_s, optf_moved_corn_s, optflow_term,
                                        optf_estimate_s, optf_max_iter_s, optf_init_estim, optflow_wnd_size) );
+    CHECK_NULL( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, m_NumImages - 2)) );
 
     CHECK_STATUS( vxVerifyGraph(m_OptFlowGraph) );
 
-    /*********** LOG ******************/
-    //CHECK_STATUS(vxAccessScalarValue(fast_num_corn_s, &corners_num));
-    //VX_PRINT(VX_ZONE_LOG, "%d found corners\n", corners_num);
-    /**********************************/
+    /*** Warp Graph***/
+    m_WarpGraph = vxCreateGraph(m_Context);
+    CHECK_NULL(m_WarpGraph);
+    m_OutImage = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
+    for(i = 1; i < m_NumImages - 1; i++)
+    {
+        vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[i - 1]);
+        vxMatrixMultiplyNode(m_WarpGraph, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, i), (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0), coeff_s);
+    }
+    vx_enum inter = VX_INTERPOLATION_TYPE_BILINEAR;
+    vx_scalar inter_s = vxCreateScalar(m_Context, VX_TYPE_ENUM, &inter);
+    vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2),
+                                              (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0), inter_s, m_OutImage);
+    vx_border_mode_t border = {VX_BORDER_MODE_CONSTANT, 0};
+    vxSetNodeAttribute(warp_node, VX_NODE_ATTRIBUTE_BORDER_MODE, &border, sizeof(border));
+    /*****************/
 }
 
+/*
 vx_status VXVideoStub::CopyImage(vx_image from, vx_image to)
 {
     vx_status status = VX_SUCCESS;
@@ -205,7 +234,7 @@ vx_status VXVideoStub::CopyImage(vx_image from, vx_image to)
     }
     return VX_SUCCESS;
 }
-
+*/
 
 vx_image VXVideoStub::NewImage()
 {
@@ -217,7 +246,8 @@ vx_image VXVideoStub::NewImage()
 
     if(m_CurImageId < m_NumImages)
     {
-        vx_image ret = (vx_image)vxGetReferenceFromDelay(m_Images, m_CurImageId);
+        m_ImageAdded = vx_true_e;
+        vx_image ret = (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages - 1);
         m_CurImageId++;
         return ret;
     }
@@ -230,15 +260,44 @@ vx_image VXVideoStub::NewImage()
 
 vx_image VXVideoStub::Calculate()
 {
-    if(m_CurImageId < m_NumImages)
-        return NULL;
-
-    if(vxProcessGraph(m_OptFlowGraph) != VX_SUCCESS)
+    if(!m_ImageAdded)
     {
-        VX_PRINT(VX_ZONE_ERROR, "Graph process error!\n");
+        VX_PRINT(VX_ZONE_WARNING, "Add new image first!\n");
         return NULL;
     }
-    m_CurImageId--;
-    return (vx_image)1;
+
+    if(m_CurImageId > 1)
+    {
+        if(vxProcessGraph(m_OptFlowGraph) != VX_SUCCESS)
+        {
+            VX_PRINT(VX_ZONE_ERROR, "Optical flow graph process error!\n");
+            return NULL;
+        }
+        //vx_float32 matr[9];
+        //vxAccessMatrix((vx_matrix)vxGetReferenceFromDelay(m_Matrices, m_NumImages - 1), &matr);
+        //int i,j;
+        //for(i = 0; i < 3; i ++){
+        //    for(j = 0; j < 3; j ++)
+        //        printf("%f, ", matr[i*3 + j]);
+        //    printf("\n");
+        //}
+        //vxCommitMatrix((vx_matrix)vxGetReferenceFromDelay(m_Matrices, m_NumImages - 1), &matr);
+    }
+    vx_image ret = NULL;
+    if(m_CurImageId == m_NumImages)
+    {
+        //ret = (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2);
+        if(vxProcessGraph(m_WarpGraph) != VX_SUCCESS)
+        {
+            VX_PRINT(VX_ZONE_ERROR, "Warp graph process error!\n");
+            return NULL;
+        }
+        ret = m_OutImage;
+        m_CurImageId--;
+    }
+    vxAgeDelay(m_Images);
+    vxAgeDelay(m_Matrices);
+    m_ImageAdded = vx_false_e;
+    return ret;
 }
 
