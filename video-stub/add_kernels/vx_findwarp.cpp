@@ -23,8 +23,13 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     
     if(points_num < 4)
     {
-        VX_PRINT(VX_ZONE_ERROR, "Number of points less then 4(%d)!\n", points_num);
-        return VX_FAILURE;
+        vx_float32 matr_buff[9];
+        vxAccessMatrix(matrix, (void*)matr_buff);
+        memset(matr_buff, 0, sizeof(vx_float32) * 9);
+        matr_buff[0] = matr_buff[4] = matr_buff[8] = 1.;
+        vxCommitMatrix(matrix, (void*)matr_buff);
+        VX_PRINT(VX_ZONE_WARNING, "Number of points less then 4(%d)!\n", points_num);
+        return VX_SUCCESS;//VX_FAILURE;
     }
 
     /*** CV array initialize ***/

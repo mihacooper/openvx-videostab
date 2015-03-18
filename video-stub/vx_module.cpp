@@ -251,7 +251,7 @@ vx_image VXVideoStub::NewImage()
     if(m_CurImageId < m_NumImages)
     {
         m_ImageAdded = vx_true_e;
-        vx_image ret = (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages - 1);
+        vx_image ret = (vx_image)vxGetReferenceFromDelay(m_Images, -(m_NumImages - 1));
         m_CurImageId++;
         return ret;
     }
