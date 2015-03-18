@@ -45,7 +45,7 @@ extern "C" {
 VX_SAMPLE_API vx_node vxRGBtoGrayNode(vx_graph graph, vx_image input, vx_image output);
 VX_SAMPLE_API vx_node vxFindWarpNode(vx_graph graph, vx_array def_pnts, vx_array moved_pnts, vx_matrix matr);
 VX_SAMPLE_API vx_node vxWarpPerspectiveRGBNode(vx_graph graph, vx_image input, vx_matrix matr, vx_scalar inter, vx_image output);
-VX_SAMPLE_API vx_node vxMatrixMultiplyNode(vx_graph graph, vx_matrix input1, vx_matrix input2, vx_scalar coeff);
+VX_SAMPLE_API vx_node vxMatrixMultiplyNode(vx_graph graph, vx_matrix input1, vx_matrix input2, vx_scalar coeff, vx_matrix output);
 
 #ifdef __cplusplus
 }

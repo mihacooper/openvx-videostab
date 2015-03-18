@@ -27,8 +27,8 @@ private:
     vx_delay   m_Matrices;
     vx_image   m_OutImage;
 
-    vx_uint32  m_NumImages;
-    vx_uint32  m_CurImageId;
+    vx_int32   m_NumImages;
+    vx_int32   m_CurImageId;
     vx_bool    m_ImageAdded;
 };
 

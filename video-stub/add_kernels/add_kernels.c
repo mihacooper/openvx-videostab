@@ -60,7 +60,7 @@ VX_SAMPLE_API vx_node vxWarpPerspectiveRGBNode(vx_graph graph, vx_image input, v
     return node;
 }
 
-VX_SAMPLE_API vx_node vxMatrixMultiplyNode(vx_graph graph, vx_matrix input1, vx_matrix input2, vx_scalar coeff)
+VX_SAMPLE_API vx_node vxMatrixMultiplyNode(vx_graph graph, vx_matrix input1, vx_matrix input2, vx_scalar coeff, vx_matrix output)
 {
     vx_node node = 0;
     vx_context context = vxGetContext((vx_reference)graph);
@@ -71,6 +71,7 @@ VX_SAMPLE_API vx_node vxMatrixMultiplyNode(vx_graph graph, vx_matrix input1, vx_
             (vx_reference)input1,
             (vx_reference)input2,
             (vx_reference)coeff,
+            (vx_reference)output
         };
         node = vxCreateNodeByStructure(graph,
                                        VX_ADD_KERNEL_MATRIX_MULTIPLY,

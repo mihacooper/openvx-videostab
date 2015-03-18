@@ -13,12 +13,18 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     vx_array moved_pnts = (vx_array) parameters[1];
     vx_matrix matrix    = (vx_matrix)parameters[2];
 
-    vx_size points_num = 0;
+    vx_size points_num = 100;
     status |= vxQueryArray(def_pnts, VX_ARRAY_ATTRIBUTE_NUMITEMS, &points_num, sizeof(points_num));
+    if(status != VX_SUCCESS)
+    {
+        VX_PRINT(VX_ZONE_ERROR, "Can't query array attribute(%d)!\n", status);
+        return VX_FAILURE;
+    }
+    
     if(points_num < 4)
     {
-        VX_PRINT(VX_ZONE_ERROR, "Number of points less then 4!");
-        return status;
+        VX_PRINT(VX_ZONE_ERROR, "Number of points less then 4(%d)!\n", points_num);
+        return VX_FAILURE;
     }
 
     /*** CV array initialize ***/
@@ -64,6 +70,13 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     for( x = 0; x < 3; ++x)
         for( y = 0; y < 3; ++y)
             matr_buff[ y * 3 + x] = (vx_float32)cv_matr.at<float>(x, y);
+printf("/*******FindWarp****/\n");
+printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
+    matr_buff[0],matr_buff[1],matr_buff[2],
+    matr_buff[3],matr_buff[4],matr_buff[5],
+    matr_buff[6],matr_buff[7],matr_buff[8]);
+printf("/*******************/\n");
+
     status |= vxCommitMatrix(matrix, (void*)matr_buff);
     return status;
 }

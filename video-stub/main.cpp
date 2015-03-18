@@ -105,9 +105,9 @@ bool VX2CV(vx_image vxImage, cv::Mat cvImage)
         {
             vx_uint8* dst = ptr + 3 * x;
             vx_uint8* src = (vx_uint8*)vxFormatImagePatchAddress2d(buff, x, y, &addr);
-            dst[0] = src[2]; // r
+            dst[0] = src[2]; // b
             dst[1] = src[1]; // g
-            dst[2] = src[0]; // b
+            dst[2] = src[0]; // r
         }
     }
 
@@ -120,6 +120,7 @@ bool VX2CV(vx_image vxImage, cv::Mat cvImage)
     return true;
 }
 
+#define WINDOW_NAME "VideoStub"
 
 int main(int argc, char* argv[])
 {
@@ -163,14 +164,9 @@ int main(int argc, char* argv[])
                 printf("Can't convert image VX->CV. Stop!\n");
                 break;
             }
-            cv::imshow("OpenVX result", cvIMage);
-            cv::waitKey(5);
         }
-        else
-        {
-            cv::imshow("CV result", cvIMage);
-            cv::waitKey(5);
-        }
+        cv::imshow(WINDOW_NAME, cvIMage);
+        cv::waitKey(5);
     }
     return 0;
 }

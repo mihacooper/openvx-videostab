@@ -6,6 +6,7 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
     vx_status status = VX_SUCCESS;
     vx_matrix matrix1 = (vx_matrix)parameters[0];
     vx_matrix matrix2 = (vx_matrix)parameters[1];
+    vx_matrix out_matr = (vx_matrix)parameters[3];
     vx_scalar scalar  = (vx_scalar)parameters[2];
 
     vx_float32 coeff = 0.;
@@ -14,6 +15,7 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
     vx_float32 matr1[9], matr2[9], res[9];
     status |= vxAccessMatrix(matrix1, matr1);
     status |= vxAccessMatrix(matrix2, matr2);
+    status |= vxAccessMatrix(out_matr, res);
     if(status != VX_SUCCESS)
     {
         VX_PRINT(VX_ZONE_ERROR, "Cann't access to matrix(%d)!\n", status);
@@ -28,13 +30,14 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
             for(k = 0; k < 3; k++)
             {
                 res[i * 3 + j] += matr1[i * 3 + k] * matr2[k * 3 + j];
-                res[i * 3 + j] *= coeff;
             }
+            res[i * 3 + j] *= coeff;
         }
     }
-    status |= vxAccessScalarValue(scalar, &coeff);
+    status |= vxCommitScalarValue(scalar, &coeff);
     status |= vxCommitMatrix(matrix1, matr1);
-    status |= vxCommitMatrix(matrix2, res);
+    status |= vxCommitMatrix(matrix2, matr2);
+    status |= vxCommitMatrix(out_matr, res);
     return status;
 }
 
@@ -94,16 +97,38 @@ static vx_status VX_CALLBACK vxMatrixMultiplyInputValidator(vx_node node, vx_uin
 
 static vx_status VX_CALLBACK vxMatrixMultiplyOutputValidator(vx_node node, vx_uint32 index, vx_meta_format_t *ptr)
 {
-    (void)node;
-    (void)index;
-    (void)ptr;
+    vx_status status = VX_ERROR_INVALID_PARAMETERS;
+    if (index == 3)
+    {
+        vx_parameter param = vxGetParameterByIndex(node, index);
+        if (param)
+        {
+            vx_matrix matrix;
+            vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, &matrix, sizeof(matrix));
+            if (matrix)
+            {
+                vx_enum data_type = 0;
+                vx_size rows = 0ul, columns = 0ul;
+                vxQueryMatrix(matrix, VX_MATRIX_ATTRIBUTE_TYPE, &data_type, sizeof(data_type));
+                vxQueryMatrix(matrix, VX_MATRIX_ATTRIBUTE_ROWS, &rows, sizeof(rows));
+                vxQueryMatrix(matrix, VX_MATRIX_ATTRIBUTE_COLUMNS, &columns, sizeof(columns));
+                if ((data_type == VX_TYPE_FLOAT32) && (columns == 3) && (rows == 3))
+                {
+                    status = VX_SUCCESS;
+                }
+                vxReleaseMatrix(&matrix);
+            }
+            vxReleaseParameter(&param);
+        }
+    }
     return VX_SUCCESS;
 }
 
 static vx_param_description_t add_matrix_multiply_kernel_params[] = {
-    {VX_INPUT,         VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
-    {VX_BIDIRECTIONAL, VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT,         VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED}
+    {VX_INPUT,  VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_OUTPUT, VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
 };
 
 vx_kernel_description_t add_matrix_multiply_rgb_kernel = {

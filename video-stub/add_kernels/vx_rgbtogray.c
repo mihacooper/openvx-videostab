@@ -20,7 +20,6 @@ static vx_status VX_CALLBACK vxRGBtoGrayKernel(vx_node node, vx_reference *param
     status |= vxAccessImagePatch(output, &rect, 0, &dst_addr, (void **)&dst_buff, VX_READ_AND_WRITE);
     height = src_addr.dim_y;
     width = src_addr.dim_x;
-    printf("\n/******** %p ********/\n", node);
     for (y = 0; y < height; y++)
     {
         for (x = 0; x < width; x++)
@@ -28,12 +27,10 @@ static vx_status VX_CALLBACK vxRGBtoGrayKernel(vx_node node, vx_reference *param
             vx_uint8* src = vxFormatImagePatchAddress2d(src_buff, x, y, &src_addr);
             vx_uint8* dst = vxFormatImagePatchAddress2d(dst_buff, x, y, &dst_addr);
             *dst = src[0] * 0.299 + src[1] * 0.587 + src[2] * 0.114;
-            printf("%d ", *dst);
         }
     }
-    printf("\n/********************/\n");
     status |= vxCommitImagePatch(input, NULL, 0, &src_addr, src_buff);
-    status |= vxCommitImagePatch(output, &rect, 0, &dst_addr, dst_buff);
+    status |= vxCommitImagePatch(output, NULL, 0, &dst_addr, dst_buff);
     return status;
 }
 
