@@ -61,12 +61,17 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
             }
         }
     }
+    else
+    {
+        status = VX_FAILURE;
+    }
     status |= vxCommitArrayRange(def_pnts, 0, points_num, def_buff);
     status |= vxCommitArrayRange(moved_pnts, 0, points_num, moved_buff);
 
     /*** CV find homography ***/
     cv::Mat_<float> cv_matr;
     cv_matr = cv::findHomography(cv_points_from, cv_points_to, CV_RANSAC);
+    cv_matr.inv();
     /**************************/
 
     vx_float32 matr_buff[9];
@@ -75,12 +80,13 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     for( x = 0; x < 3; ++x)
         for( y = 0; y < 3; ++y)
             matr_buff[ y * 3 + x] = (vx_float32)cv_matr.at<float>(x, y);
-printf("/*******FindWarp****/\n");
-printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
-    matr_buff[0],matr_buff[1],matr_buff[2],
-    matr_buff[3],matr_buff[4],matr_buff[5],
-    matr_buff[6],matr_buff[7],matr_buff[8]);
-printf("/*******************/\n");
+
+    //printf("/*******FindWarp****/\n");
+    //printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
+    //    matr_buff[0],matr_buff[1],matr_buff[2],
+    //    matr_buff[3],matr_buff[4],matr_buff[5],
+    //    matr_buff[6],matr_buff[7],matr_buff[8]);
+    //printf("/*******************/\n");
 
     status |= vxCommitMatrix(matrix, (void*)matr_buff);
     return status;

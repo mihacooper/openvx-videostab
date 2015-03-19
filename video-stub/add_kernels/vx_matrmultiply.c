@@ -9,6 +9,7 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
     vx_matrix out_matr = (vx_matrix)parameters[3];
     vx_scalar scalar  = (vx_scalar)parameters[2];
 
+    //printf("Mul: %p\n", out_matr);
     vx_float32 coeff = 0.;
     vxAccessScalarValue(scalar, &coeff);
 
@@ -21,7 +22,7 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
         VX_PRINT(VX_ZONE_ERROR, "Cann't access to matrix(%d)!\n", status);
         return status;
     }
-    int i, j, k, l;
+    int i, j, k;
     for(i = 0; i < 3; i++)
     {
         for(j = 0; j < 3; j++)
@@ -131,7 +132,7 @@ static vx_param_description_t add_matrix_multiply_kernel_params[] = {
     {VX_OUTPUT, VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
 };
 
-vx_kernel_description_t add_matrix_multiply_rgb_kernel = {
+vx_kernel_description_t add_matrix_multiply_kernel = {
     VX_ADD_KERNEL_MATRIX_MULTIPLY,
     VX_ADD_KERNEL_NAME_MATRIX_MULTIPLY,
     vxMatrixMultiplyKernel,

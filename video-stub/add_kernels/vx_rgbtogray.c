@@ -30,7 +30,7 @@ static vx_status VX_CALLBACK vxRGBtoGrayKernel(vx_node node, vx_reference *param
         }
     }
     status |= vxCommitImagePatch(input, NULL, 0, &src_addr, src_buff);
-    status |= vxCommitImagePatch(output, NULL, 0, &dst_addr, dst_buff);
+    status |= vxCommitImagePatch(output, &rect, 0, &dst_addr, dst_buff);
     return status;
 }
 

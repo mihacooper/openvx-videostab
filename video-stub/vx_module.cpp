@@ -71,10 +71,10 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     int i;
     m_NumImages = gauss_size;
     /*****FAST9 params*****/
-    vx_float32 fast_thresh = 1.f; // threshold parameter of FAST9
+    vx_float32 fast_thresh = 100.f; // threshold parameter of FAST9
     vx_uint32  corners_num = 100;    // tmp value for init scalar
     /*****OptFlow params*****/
-    vx_size optflow_wnd_size = 5;
+    vx_size optflow_wnd_size = 10;
     vx_float32 pyramid_scale = VX_SCALE_PYRAMID_HALF;
     vx_size    pyramid_level = min(
                 floor(log(vx_float32(optflow_wnd_size) / vx_float32(width)) / log(pyramid_scale)),
@@ -82,8 +82,8 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
                 );
     pyramid_level = max(1, min(pyramid_level, MAX_PYRAMID_LEVELS));
     vx_enum optflow_term = VX_TERM_CRITERIA_BOTH;
-    vx_float32 optflow_estimate = 1;
-    vx_uint32 optflow_max_iter = 100;
+    vx_float32 optflow_estimate = 0.1;
+    vx_uint32 optflow_max_iter = 500;
     vx_uint32 optflow_init_estimate = vx_false_e;
 
     vx_float32 sigma = (m_NumImages - 2) * 0.35;
@@ -95,7 +95,7 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
         sum += matr_coeffs[i];
     sum = 1. / sum;
     for (i = 0; i < 3; ++i)
-        matr_coeffs[i] /= sum;
+        matr_coeffs[i] *= sum;
     /******End of params******/
 
     m_OptFlowGraph = vxCreateGraph(m_Context);
@@ -135,8 +135,8 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL(pyramid_2);
     /***    End of objects    ***/
 
-    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, -(m_NumImages - 2) ), gray_image_1) );
-    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, -(m_NumImages - 1) ), gray_image_2) );
+    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 1 ), gray_image_1) );
+    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 0 ), gray_image_2) );
     CHECK_NULL( vxFastCornersNode(m_OptFlowGraph, gray_image_1, fast_thresh_s, vx_false_e, fast_found_corn_s, fast_num_corn_s) );
 
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_1, pyramid_1) );
@@ -144,7 +144,7 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL( vxOpticalFlowPyrLKNode(m_OptFlowGraph, pyramid_1, pyramid_2, fast_found_corn_s,
                                        optf_extim_corn_s, optf_moved_corn_s, optflow_term,
                                        optf_estimate_s, optf_max_iter_s, optf_init_estim, optflow_wnd_size) );
-    CHECK_NULL( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, -(m_NumImages - 2) )) );
+    CHECK_NULL( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0 )) );
 
     CHECK_STATUS( vxVerifyGraph(m_OptFlowGraph) );
 
@@ -157,88 +157,18 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     {
         vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[i - 1]);
         vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
-        vxMatrixMultiplyNode(m_WarpGraph, prev_matr, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, -i ), coeff_s, next_matr);
+        CHECK_NULL(vxMatrixMultiplyNode(m_WarpGraph, prev_matr, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, i ), coeff_s, next_matr));
         prev_matr = next_matr;
     }
-    vx_enum inter = VX_INTERPOLATION_TYPE_BILINEAR;
+    vx_enum inter = VX_INTERPOLATION_TYPE_NEAREST_NEIGHBOR;
     vx_scalar inter_s = vxCreateScalar(m_Context, VX_TYPE_ENUM, &inter);
-    vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, -(m_NumImages / 2) ),
+    vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2 ),
                                               prev_matr, inter_s, m_OutImage);
     vx_border_mode_t border = {VX_BORDER_MODE_CONSTANT, 0};
     vxSetNodeAttribute(warp_node, VX_NODE_ATTRIBUTE_BORDER_MODE, &border, sizeof(border));
     CHECK_STATUS( vxVerifyGraph(m_WarpGraph) );
     /*****************/
 }
-
-/*
-vx_status VXVideoStub::CopyImage(vx_image from, vx_image to)
-{
-    vx_status status = VX_SUCCESS;
-
-    vx_df_image in_format; vx_uint32 in_width, in_height;
-    status |= vxQueryImage(from, VX_IMAGE_ATTRIBUTE_FORMAT, &in_format, sizeof(in_format));
-    status |= vxQueryImage(from, VX_IMAGE_ATTRIBUTE_WIDTH,  &in_width,  sizeof(in_width));
-    status |= vxQueryImage(from, VX_IMAGE_ATTRIBUTE_HEIGHT, &in_height, sizeof(in_height));
-    if(status != VX_SUCCESS)
-    {
-        VX_PRINT(VX_ZONE_ERROR, "Can't access to input image!\n");
-        return VX_FAILURE;
-    }
-
-    vx_df_image out_format; vx_uint32 out_width, out_height;
-    status |= vxQueryImage(to, VX_IMAGE_ATTRIBUTE_FORMAT, &out_format, sizeof(out_format));
-    status |= vxQueryImage(to, VX_IMAGE_ATTRIBUTE_WIDTH,  &out_width,  sizeof(out_width));
-    status |= vxQueryImage(to, VX_IMAGE_ATTRIBUTE_HEIGHT, &out_height, sizeof(out_height));
-    if(status != VX_SUCCESS)
-    {
-        VX_PRINT(VX_ZONE_ERROR, "Can't access to output image!\n");
-        return VX_FAILURE;
-    }
-
-    if( in_format != out_format || in_height != out_height || in_width != out_width)
-    {
-        VX_PRINT(VX_ZONE_ERROR, "Input and output images differ!\n");
-        return VX_FAILURE;
-    }
-
-    void* in_buff = NULL, *out_buff = NULL;
-    vx_imagepatch_addressing_t in_addr, out_addr;
-    vx_rectangle_t rect = {0, 0, in_width, in_height};
-    for(int i = 0; i < 3; i ++)
-    {
-        status |= vxAccessImagePatch(from, &rect, i, &in_addr, (void **)&in_buff, VX_READ_AND_WRITE);
-        if(status != VX_SUCCESS)
-        {
-            VX_PRINT(VX_ZONE_ERROR, "Can't access input image patch!\n");
-            return VX_FAILURE;
-        }
-
-        status |= vxAccessImagePatch(to, &rect, i, &out_addr, (void **)&out_buff, VX_READ_AND_WRITE);
-        if(status != VX_SUCCESS)
-        {
-            VX_PRINT(VX_ZONE_ERROR, "Can't access output image patch!\n");
-            return VX_FAILURE;
-        }
-
-        vx_size size = vxComputeImagePatchSize(from, &rect, i);
-        memcpy(out_buff, in_buff, size);
-
-        status |= vxCommitImagePatch(from, NULL, i, &in_addr, in_buff);
-        if(status != VX_SUCCESS)
-        {
-            VX_PRINT(VX_ZONE_ERROR, "Can't commit input image patch!\n");
-            return VX_FAILURE;
-        }
-        status |= vxCommitImagePatch(to, NULL, i, &out_addr, out_buff);
-        if(status != VX_SUCCESS)
-        {
-            VX_PRINT(VX_ZONE_ERROR, "Can't commit output image patch!\n");
-            return VX_FAILURE;
-        }
-    }
-    return VX_SUCCESS;
-}
-*/
 
 vx_image VXVideoStub::NewImage()
 {
@@ -251,7 +181,7 @@ vx_image VXVideoStub::NewImage()
     if(m_CurImageId < m_NumImages)
     {
         m_ImageAdded = vx_true_e;
-        vx_image ret = (vx_image)vxGetReferenceFromDelay(m_Images, -(m_NumImages - 1));
+        vx_image ret = (vx_image)vxGetReferenceFromDelay(m_Images, 0);
         m_CurImageId++;
         return ret;
     }
@@ -277,25 +207,10 @@ vx_image VXVideoStub::Calculate()
             VX_PRINT(VX_ZONE_ERROR, "Optical flow graph process error!\n");
             return NULL;
         }
-        for(int m = 0; m < 4; m ++)
-        {
-            vx_float32 matr[9];
-            vxAccessMatrix((vx_matrix)vxGetReferenceFromDelay(m_Matrices, -m), &matr);
-            int i,j;
-            printf("/**************Matrix %d******************/\n", m);
-            for(i = 0; i < 3; i ++){
-                for(j = 0; j < 3; j ++)
-                    printf("%f, ", matr[i*3 + j]);
-                printf("\n");
-            }
-            vxCommitMatrix((vx_matrix)vxGetReferenceFromDelay(m_Matrices, -m), &matr);
-            printf("/*****************************************/\n");
-        }
     }
     vx_image ret = NULL;
     if(m_CurImageId == m_NumImages)
     {
-        //ret = (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2);
         if(vxProcessGraph(m_WarpGraph) != VX_SUCCESS)
         {
             VX_PRINT(VX_ZONE_ERROR, "Warp graph process error!\n");

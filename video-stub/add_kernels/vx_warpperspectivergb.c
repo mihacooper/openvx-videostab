@@ -71,15 +71,16 @@ static vx_status VX_CALLBACK vxWarpPerspectiveRGBKernel(vx_node node, vx_referen
     status |= vxAccessImagePatch(src_image, &src_rect, 0, &src_addr, &src_base, VX_READ_ONLY);
     status |= vxAccessImagePatch(dst_image, &dst_rect, 0, &dst_addr, &dst_base, VX_WRITE_ONLY);
 
+    vx_float32 tmp_m[9];
     status |= vxAccessMatrix(matrix, m);
     status |= vxAccessScalarValue(stype, &type);
 
-printf("/*******************/\n");
-printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
-    m[0],m[1],m[2],
-    m[3],m[4],m[5],
-    m[6],m[7],m[8]);
-printf("/*******************/\n");
+    //printf("/*******************/\n");
+    //printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
+    //    m[0],m[1],m[2],
+    //    m[3],m[4],m[5],
+    //    m[6],m[7],m[8]);
+    //printf("/*******************/\n");
 
     if (status == VX_SUCCESS)
     {

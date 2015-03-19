@@ -18,8 +18,6 @@ public:
     vx_image  NewImage();
     vx_image  Calculate();
 private:
-    // vx_status CopyImage(vx_image from, vx_image to);
-
     vx_context m_Context;
     vx_graph   m_OptFlowGraph;
     vx_graph   m_WarpGraph;
