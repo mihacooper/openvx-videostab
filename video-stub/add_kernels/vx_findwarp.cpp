@@ -67,6 +67,7 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     }
     status |= vxCommitArrayRange(def_pnts, 0, points_num, def_buff);
     status |= vxCommitArrayRange(moved_pnts, 0, points_num, moved_buff);
+    VX_PRINT(VX_ZONE_LOG, "Number of points = (%d)!\n", cv_points_from.size());
 
     /*** CV find homography ***/
     cv::Mat_<float> cv_matr;

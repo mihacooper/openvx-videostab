@@ -63,18 +63,19 @@ vx_status VXVideoStub::EnableDebug(const std::initializer_list<vx_enum>& zones)
 #define MAX_PYRAMID_LEVELS 10
 #define MAX_FOUNDED_CORNERS 200
 
-vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 height, const vx_uint32 gauss_size)
+vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 height, const vx_int32 gauss_size)
 {
     if(m_Context == NULL)
         return VX_FAILURE;
 
-    int i;
-    m_NumImages = gauss_size;
+    int i, j;
+    m_NumImages = gauss_size * 2 + 2;
+    m_NumMatr = gauss_size * 2 + 1;
     /*****FAST9 params*****/
     vx_float32 fast_thresh = 100.f; // threshold parameter of FAST9
     vx_uint32  corners_num = 100;    // tmp value for init scalar
     /*****OptFlow params*****/
-    vx_size optflow_wnd_size = 10;
+    vx_size optflow_wnd_size = 3;
     vx_float32 pyramid_scale = VX_SCALE_PYRAMID_HALF;
     vx_size    pyramid_level = min(
                 floor(log(vx_float32(optflow_wnd_size) / vx_float32(width)) / log(pyramid_scale)),
@@ -82,19 +83,19 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
                 );
     pyramid_level = max(1, min(pyramid_level, MAX_PYRAMID_LEVELS));
     vx_enum optflow_term = VX_TERM_CRITERIA_BOTH;
-    vx_float32 optflow_estimate = 0.1;
-    vx_uint32 optflow_max_iter = 500;
+    vx_float32 optflow_estimate = 1;
+    vx_uint32 optflow_max_iter = 1000;
     vx_uint32 optflow_init_estimate = vx_false_e;
 
-    vx_float32 sigma = (m_NumImages - 2) * 0.35;
-    vx_float32 matr_coeffs[4];
-    for (i = -1; i <= 1; ++i)
-        matr_coeffs[i + 1] = ( exp(-i * i / (2.f * sigma * sigma)) );
+    vx_float32 sigma = gauss_size * 0.7;
+    vx_float32 matr_coeffs[gauss_size * 2 + 1];
+    for (i = -gauss_size; i <= gauss_size; ++i)
+        matr_coeffs[i + gauss_size] = ( exp(-i * i / (2.f * sigma * sigma)) );
     vx_float32 sum = 0.;
-    for (i = 0; i < 3; ++i)
+    for (i = 0; i < dimof(matr_coeffs); ++i)
         sum += matr_coeffs[i];
     sum = 1. / sum;
-    for (i = 0; i < 3; ++i)
+    for (i = 0; i < dimof(matr_coeffs); ++i)
         matr_coeffs[i] *= sum;
     /******End of params******/
 
@@ -103,7 +104,7 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
 
     /***     Create images   ***/
     vx_image tmp_image = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
-    m_Images = vxCreateDelay(m_Context, (vx_reference)tmp_image, gauss_size);
+    m_Images = vxCreateDelay(m_Context, (vx_reference)tmp_image, m_NumImages);
     vx_image gray_image_1 = vxCreateVirtualImage(m_OptFlowGraph, width, height, VX_DF_IMAGE_U8);
     vx_image gray_image_2 = vxCreateVirtualImage(m_OptFlowGraph, width, height, VX_DF_IMAGE_U8);
     /***     Check images    ***/
@@ -114,7 +115,7 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
 
     /***    Create objects    ***/
     vx_matrix tmp_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
-    m_Matrices = vxCreateDelay(m_Context, (vx_reference)tmp_matr, gauss_size - 1);
+    m_Matrices = vxCreateDelay(m_Context, (vx_reference)tmp_matr, m_NumImages - 1);
     vx_scalar  fast_thresh_s     = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &fast_thresh);
     vx_scalar  fast_num_corn_s   = vxCreateScalar(m_Context, VX_TYPE_UINT32, &corners_num);
     vx_array   fast_found_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, MAX_FOUNDED_CORNERS);
@@ -152,21 +153,38 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     m_WarpGraph = vxCreateGraph(m_Context);
     CHECK_NULL(m_WarpGraph);
     m_OutImage = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
-    vx_matrix prev_matr = (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0);
-    for(i = 1; i < m_NumImages - 1; i++)
+    vx_matrix prev_sum_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+    vx_float32 matr[9];
+    CHECK_STATUS(vxAccessMatrix(prev_sum_matr, matr));
+    memset(matr, 0, sizeof(vx_float32) * 9);
+    CHECK_STATUS(vxCommitMatrix(prev_sum_matr, matr));
+    for(j = 0; j < m_NumMatr; j++)
     {
-        vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[i - 1]);
+        //if( j == (m_NumMatr / 2))
+        //   continue;
+        int center = m_NumMatr / 2;
+        int start = j < center ? j : center;
+        int end = j > center ? j : center;
+        vx_matrix prev_mul_matr = (vx_matrix)vxGetReferenceFromDelay(m_Matrices, start);
+        for(i = start + 1; i <= end; i++)
+        {
+            vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+            CHECK_NULL(vxMatrixMultiplyNode(m_WarpGraph, prev_mul_matr, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, i ), NULL, next_matr));
+            prev_mul_matr = next_matr;
+        }
+        vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[j]);
         vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
-        CHECK_NULL(vxMatrixMultiplyNode(m_WarpGraph, prev_matr, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, i ), coeff_s, next_matr));
-        prev_matr = next_matr;
+        CHECK_NULL(vxMatrixAddNode(m_WarpGraph, prev_mul_matr, prev_sum_matr, coeff_s, next_matr));
+        prev_sum_matr = next_matr;
     }
     vx_enum inter = VX_INTERPOLATION_TYPE_NEAREST_NEIGHBOR;
     vx_scalar inter_s = vxCreateScalar(m_Context, VX_TYPE_ENUM, &inter);
-    vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2 ),
-                                              prev_matr, inter_s, m_OutImage);
+    vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2 + 1),
+                                              prev_sum_matr, inter_s, m_OutImage);
     vx_border_mode_t border = {VX_BORDER_MODE_CONSTANT, 0};
     vxSetNodeAttribute(warp_node, VX_NODE_ATTRIBUTE_BORDER_MODE, &border, sizeof(border));
     CHECK_STATUS( vxVerifyGraph(m_WarpGraph) );
+    return VX_SUCCESS;
     /*****************/
 }
 

@@ -13,7 +13,7 @@ public:
     VXVideoStub();
     virtual ~VXVideoStub();
 
-    vx_status CreatePipeline(const vx_uint32 width, const vx_uint32 height, const vx_uint32 gauss_size);
+    vx_status CreatePipeline(const vx_uint32 width, const vx_uint32 height, const vx_int32 gauss_size);
     vx_status EnableDebug(const std::initializer_list<vx_enum>& zones);
     vx_image  NewImage();
     vx_image  Calculate();
@@ -26,6 +26,7 @@ private:
     vx_image   m_OutImage;
 
     vx_int32   m_NumImages;
+    vx_int32   m_NumMatr;
     vx_int32   m_CurImageId;
     vx_bool    m_ImageAdded;
 };

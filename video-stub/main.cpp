@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 
     VXVideoStub vstub;
     vx_size gauss_size = 5;
-    vstub.EnableDebug({VX_ZONE_ERROR/*, VX_ZONE_LOG, VX_ZONE_DELAY, VX_ZONE_IMAGE*/});
+    vstub.EnableDebug({VX_ZONE_ERROR, VX_ZONE_LOG/*, VX_ZONE_DELAY, VX_ZONE_IMAGE*/});
     bool first = true;
     cv::Mat cvIMage;
     int counter = 0;
@@ -118,11 +118,11 @@ int main(int argc, char* argv[])
         {
             if(vstub.CreatePipeline(cvIMage.cols, cvIMage.rows, gauss_size) != VX_SUCCESS)
                 break;
-            //if(!cvWriter.open(argv[2], -1, cvReader.get(CV_CAP_PROP_FPS), cv::Size(cvIMage.cols, cvIMage.rows)))
-            //{
-            //    std::cout << " Cann't open output video file!" << std::endl;
-            //    break;
-            //}
+            if(!cvWriter.open(argv[2], cvReader.get(CV_CAP_PROP_FOURCC), cvReader.get(CV_CAP_PROP_FPS), cv::Size(cvIMage.cols, cvIMage.rows)))
+            {
+                std::cout << " Cann't open output video file!" << std::endl;
+                break;
+            }
             first = false;
         }
         vx_image vxImage = vstub.NewImage();
@@ -140,9 +140,9 @@ int main(int argc, char* argv[])
                 break;
             }
         }
-        cv::imshow(WINDOW_NAME, cvIMage);
-        cv::waitKey(5);
-        //cvWriter << cvIMage;
+        //cv::imshow(WINDOW_NAME, cvIMage);
+        //cv::waitKey(5);
+        cvWriter << cvIMage;
         counter++;
         std::cout << counter << " processed frames" << std::endl;
     }

@@ -10,8 +10,10 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
     vx_scalar scalar  = (vx_scalar)parameters[2];
 
     //printf("Mul: %p\n", out_matr);
+    vx_bool use_coef = (scalar != NULL);
     vx_float32 coeff = 0.;
-    vxAccessScalarValue(scalar, &coeff);
+    if(use_coef)
+        vxAccessScalarValue(scalar, &coeff);
 
     vx_float32 matr1[9], matr2[9], res[9];
     status |= vxAccessMatrix(matrix1, matr1);
@@ -32,10 +34,12 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
             {
                 res[i * 3 + j] += matr1[i * 3 + k] * matr2[k * 3 + j];
             }
-            res[i * 3 + j] *= coeff;
+            if(use_coef)
+                res[i * 3 + j] *= coeff;
         }
     }
-    status |= vxCommitScalarValue(scalar, &coeff);
+    if(use_coef)
+        status |= vxCommitScalarValue(scalar, &coeff);
     status |= vxCommitMatrix(matrix1, matr1);
     status |= vxCommitMatrix(matrix2, matr2);
     status |= vxCommitMatrix(out_matr, res);
@@ -128,7 +132,7 @@ static vx_status VX_CALLBACK vxMatrixMultiplyOutputValidator(vx_node node, vx_ui
 static vx_param_description_t add_matrix_multiply_kernel_params[] = {
     {VX_INPUT,  VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
-    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_OPTIONAL},
     {VX_OUTPUT, VX_TYPE_MATRIX, VX_PARAMETER_STATE_REQUIRED},
 };
 
