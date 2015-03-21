@@ -70,17 +70,27 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     VX_PRINT(VX_ZONE_LOG, "Number of points = (%d)!\n", cv_points_from.size());
 
     /*** CV find homography ***/
-    cv::Mat_<float> cv_matr;
+#define TYPE double
+    cv::Mat_<double> cv_matr;
     cv_matr = cv::findHomography(cv_points_from, cv_points_to, CV_RANSAC);
-    cv_matr.inv();
+    printf("%lf,%lf,%lf\n%lf,%lf,%lf\n%lf,%lf,%lf\n",
+        cv_matr.at<TYPE>(0,0), cv_matr.at<TYPE>(0,1), cv_matr.at<TYPE>(0,2),
+        cv_matr.at<TYPE>(1,0), cv_matr.at<TYPE>(1,1), cv_matr.at<TYPE>(1,2),
+        cv_matr.at<TYPE>(2,0), cv_matr.at<TYPE>(2,1), cv_matr.at<TYPE>(2,2));
+    cv_matr = cv_matr.inv();
+
+    printf("\n%lf,%lf,%lf\n%lf,%lf,%lf\n%lf,%lf,%lf\n",
+        cv_matr.at<TYPE>(0,0), cv_matr.at<TYPE>(0,1), cv_matr.at<TYPE>(0,2),
+        cv_matr.at<TYPE>(1,0), cv_matr.at<TYPE>(1,1), cv_matr.at<TYPE>(1,2),
+        cv_matr.at<TYPE>(2,0), cv_matr.at<TYPE>(2,1), cv_matr.at<TYPE>(2,2));
     /**************************/
 
     vx_float32 matr_buff[9];
     status |= vxAccessMatrix(matrix, (void*)matr_buff);
     int x = 0, y = 0;
-    for( x = 0; x < 3; ++x)
-        for( y = 0; y < 3; ++y)
-            matr_buff[ y * 3 + x] = (vx_float32)cv_matr.at<float>(x, y);
+    for( y = 0; y < 3; ++y)
+      for( x = 0; x < 3; ++x)
+            matr_buff[ y * 3 + x] = (vx_float32)cv_matr.at<double>(y, x);
 
     //printf("/*******FindWarp****/\n");
     //printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",

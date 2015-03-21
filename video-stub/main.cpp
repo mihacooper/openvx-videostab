@@ -5,6 +5,9 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/features2d/features2d.hpp"
 
+#include "opencv2/calib3d/calib3d.hpp"
+#include <vector>
+
 void _CV2VX(vx_uint8* cv, vx_uint8* vx)
 {
     vx[0] = cv[2]; // r
@@ -28,7 +31,6 @@ bool Converter(vx_image vxImage, cv::Mat cvImage, ConvKernel kernel)
         printf("Unsupported image type: %d", cvImage.type());
         return false;
     }
-
     vx_status status = VX_SUCCESS;
 
     vx_uint32 width = 0, height = 0;
@@ -96,7 +98,33 @@ int main(int argc, char* argv[])
         printf("Use ./%s <input_video> <output_video>\n", argv[0]);
         return 0;
     }
+    /*
+    vx_context context = vxCreateContext();
+    vx_graph graph = vxCreateGraph(context);
+    vx_matrix matr1 = vxCreateMatrix(context, VX_TYPE_FLOAT32, 3, 3);
+    vx_matrix matr2 = vxCreateMatrix(context, VX_TYPE_FLOAT32, 3, 3);
 
+    vx_float32 matr[9];
+    vxAccessMatrix(matr1, matr);
+    memset(matr, 0, sizeof(vx_float32) * 9);
+    matr[0] = matr[4] = matr[8] = 1.f;
+    matr[2] = 1.f;
+    vxCommitMatrix(matr1, matr);
+
+    vxMatrixInvertNode(graph, matr1, matr2);
+
+    vxVerifyGraph(graph);
+    printf("asd\n");
+    vxProcessGraph(graph);
+
+    vxAccessMatrix(matr2, matr);
+    printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
+        matr[0],matr[1],matr[2],
+        matr[3],matr[4],matr[5],
+        matr[6],matr[7],matr[8]);
+    vxCommitMatrix(matr2, matr);
+    return 0;
+*/
     cv::VideoCapture cvReader(argv[1]);
     cv::VideoWriter  cvWriter;
 

@@ -101,3 +101,22 @@ VX_SAMPLE_API vx_node vxMatrixAddNode(vx_graph graph, vx_matrix input1, vx_matri
     }
     return node;
 }
+
+VX_SAMPLE_API vx_node vxMatrixInvertNode(vx_graph graph, vx_matrix input, vx_matrix output)
+{
+    vx_node node = 0;
+    vx_context context = vxGetContext((vx_reference)graph);
+    vx_status status = vxLoadKernels(context, VX_ADD_LIBRARY_NAME);
+    if (status == VX_SUCCESS)
+    {
+        vx_reference params[] = {
+            (vx_reference)input,
+            (vx_reference)output
+        };
+        node = vxCreateNodeByStructure(graph,
+                                       VX_ADD_KERNEL_MATRIX_INVERT,
+                                       params,
+                                       dimof(params));
+    }
+    return node;
+}

@@ -154,16 +154,17 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL(m_WarpGraph);
     m_OutImage = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
     vx_matrix prev_sum_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
-    vx_float32 matr[9];
-    CHECK_STATUS(vxAccessMatrix(prev_sum_matr, matr));
-    memset(matr, 0, sizeof(vx_float32) * 9);
-    CHECK_STATUS(vxCommitMatrix(prev_sum_matr, matr));
+    vx_float32 matr_ptr[9];
+    vxAccessMatrix(prev_sum_matr, matr_ptr);
+    memset(matr_ptr, 0, sizeof(vx_float32) * 9);
+    vxCommitMatrix(prev_sum_matr, matr_ptr);
+
     for(j = 0; j < m_NumMatr; j++)
     {
-        //if( j == (m_NumMatr / 2))
-        //   continue;
+        if( j == (m_NumMatr / 2))
+           continue;
         int center = m_NumMatr / 2;
-        int start = j < center ? j : center;
+        int start = j < center ? j : center - 1;
         int end = j > center ? j : center;
         vx_matrix prev_mul_matr = (vx_matrix)vxGetReferenceFromDelay(m_Matrices, start);
         for(i = start + 1; i <= end; i++)
@@ -171,6 +172,12 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
             vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
             CHECK_NULL(vxMatrixMultiplyNode(m_WarpGraph, prev_mul_matr, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, i ), NULL, next_matr));
             prev_mul_matr = next_matr;
+        }
+        if(j > m_NumMatr / 2)
+        {
+           vx_matrix inv_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+           CHECK_NULL(vxMatrixInvertNode(m_WarpGraph, prev_mul_matr, inv_matr));
+           prev_mul_matr = inv_matr;
         }
         vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[j]);
         vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);

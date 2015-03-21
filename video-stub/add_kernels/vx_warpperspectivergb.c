@@ -30,10 +30,10 @@ static vx_bool read_pixel(void *base, vx_imagepatch_addressing_t *addr,
 
 static void transform_perspective(vx_uint32 dst_x, vx_uint32 dst_y, const vx_float32 m[], vx_float32 *src_x, vx_float32 *src_y)
 {
-    vx_float32 z = dst_x * m[2] + dst_y * m[5] + m[8];
+    vx_float32 z = dst_x * m[6] + dst_y * m[7] + m[8];
 
-    *src_x = (dst_x * m[0] + dst_y * m[3] + m[6]) / z;
-    *src_y = (dst_x * m[1] + dst_y * m[4] + m[7]) / z;
+    *src_x = (dst_x * m[0] + dst_y * m[1] + m[2]) / z;
+    *src_y = (dst_x * m[3] + dst_y * m[4] + m[5]) / z;
 }
 
 static vx_status VX_CALLBACK vxWarpPerspectiveRGBKernel(vx_node node, vx_reference *parameters, vx_uint32 num)
@@ -71,16 +71,15 @@ static vx_status VX_CALLBACK vxWarpPerspectiveRGBKernel(vx_node node, vx_referen
     status |= vxAccessImagePatch(src_image, &src_rect, 0, &src_addr, &src_base, VX_READ_ONLY);
     status |= vxAccessImagePatch(dst_image, &dst_rect, 0, &dst_addr, &dst_base, VX_WRITE_ONLY);
 
-    vx_float32 tmp_m[9];
     status |= vxAccessMatrix(matrix, m);
     status |= vxAccessScalarValue(stype, &type);
 
-    //printf("/*******************/\n");
-    //printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
-    //    m[0],m[1],m[2],
-    //   m[3],m[4],m[5],
-    //    m[6],m[7],m[8]);
-    //printf("/*******************/\n");
+    printf("/*******************/\n");
+    printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
+        m[0],m[1],m[2],
+        m[3],m[4],m[5],
+        m[6],m[7],m[8]);
+    printf("/*******************/\n");
 
     if (status == VX_SUCCESS)
     {
