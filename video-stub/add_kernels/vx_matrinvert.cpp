@@ -27,6 +27,11 @@ static vx_status VX_CALLBACK vxMatrixInvertKernel(vx_node node, vx_reference *pa
         out_matr[0],out_matr[1],out_matr[2],
         out_matr[3],out_matr[4],out_matr[5],
         out_matr[6],out_matr[7],out_matr[8]);
+    printf("Mod = %f\n",
+          out_matr[0] * (out_matr[4]*out_matr[8] - out_matr[5]*out_matr[7])
+         -out_matr[1] * (out_matr[3]*out_matr[8] - out_matr[5]*out_matr[6])
+         +out_matr[2] * (out_matr[3]*out_matr[7] - out_matr[4]*out_matr[6])
+          );
     /************************/
 
     status |= vxCommitMatrix(input, in_matr);
