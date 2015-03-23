@@ -74,13 +74,14 @@ static vx_status VX_CALLBACK vxWarpPerspectiveRGBKernel(vx_node node, vx_referen
     status |= vxAccessMatrix(matrix, m);
     status |= vxAccessScalarValue(stype, &type);
 
-    printf("/*******************/\n");
+    /**/
+    printf("|*******************|\n");
     printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
         m[0],m[1],m[2],
         m[3],m[4],m[5],
         m[6],m[7],m[8]);
-    printf("/*******************/\n");
-
+    printf("|*******************|\n");
+    //*/
     if (status == VX_SUCCESS)
     {
         for (y = 0u; y < dst_addr.dim_y; y++)

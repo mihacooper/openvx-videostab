@@ -24,6 +24,7 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
         return status;
     }
 
+    /*
     printf("Mul1:\n%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
         matr1[0],matr1[1],matr1[2],
         matr1[3],matr1[4],matr1[5],
@@ -32,6 +33,7 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
         matr2[0],matr2[1],matr2[2],
         matr2[3],matr2[4],matr2[5],
         matr2[6],matr2[7],matr2[8]);
+    */
     int i, j, k;
     for(i = 0; i < 3; i++)
     {
@@ -46,11 +48,12 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
                 res[i * 3 + j] *= coeff;
         }
     }
+    /*
     printf("Mul:\n%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
         res[0],res[1],res[2],
         res[3],res[4],res[5],
         res[6],res[7],res[8]);
-
+   */
     if(use_coef)
         status |= vxCommitScalarValue(scalar, &coeff);
     status |= vxCommitMatrix(matrix1, matr1);

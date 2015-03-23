@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
     cv::VideoWriter  cvWriter;
 
     VXVideoStub vstub;
-    vx_size gauss_size = 5;
+    vx_size gauss_size = 8;
     vstub.EnableDebug({VX_ZONE_ERROR, VX_ZONE_LOG/*, VX_ZONE_DELAY, VX_ZONE_IMAGE*/});
     bool first = true;
     cv::Mat cvIMage;

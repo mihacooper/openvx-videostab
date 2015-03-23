@@ -60,8 +60,8 @@ vx_status VXVideoStub::EnableDebug(const std::initializer_list<vx_enum>& zones)
         vx_set_debug_zone(*i);
 }
 
-#define MAX_PYRAMID_LEVELS 10
-#define MAX_FOUNDED_CORNERS 200
+#define MAX_PYRAMID_LEVELS 5
+#define MAX_FOUNDED_CORNERS 500
 
 vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 height, const vx_int32 gauss_size)
 {
@@ -72,10 +72,10 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     m_NumImages = gauss_size * 2 + 2;
     m_NumMatr = gauss_size * 2 + 1;
     /*****FAST9 params*****/
-    vx_float32 fast_thresh = 100.f; // threshold parameter of FAST9
+    vx_float32 fast_thresh = 80.f; // threshold parameter of FAST9
     vx_uint32  corners_num = 100;    // tmp value for init scalar
     /*****OptFlow params*****/
-    vx_size optflow_wnd_size = 3;
+    vx_size optflow_wnd_size = 50;
     vx_float32 pyramid_scale = VX_SCALE_PYRAMID_HALF;
     vx_size    pyramid_level = min(
                 floor(log(vx_float32(optflow_wnd_size) / vx_float32(width)) / log(pyramid_scale)),
@@ -83,8 +83,8 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
                 );
     pyramid_level = max(1, min(pyramid_level, MAX_PYRAMID_LEVELS));
     vx_enum optflow_term = VX_TERM_CRITERIA_BOTH;
-    vx_float32 optflow_estimate = 1;
-    vx_uint32 optflow_max_iter = 1000;
+    vx_float32 optflow_estimate = 0.01;
+    vx_uint32 optflow_max_iter = 100;
     vx_uint32 optflow_init_estimate = vx_false_e;
 
     vx_float32 sigma = gauss_size * 0.7;
@@ -115,12 +115,11 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
 
     /***    Create objects    ***/
     vx_matrix tmp_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
-    m_Matrices = vxCreateDelay(m_Context, (vx_reference)tmp_matr, m_NumImages - 1);
+    m_Matrices = vxCreateDelay(m_Context, (vx_reference)tmp_matr, m_NumMatr);
     vx_scalar  fast_thresh_s     = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &fast_thresh);
     vx_scalar  fast_num_corn_s   = vxCreateScalar(m_Context, VX_TYPE_UINT32, &corners_num);
     vx_array   fast_found_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, MAX_FOUNDED_CORNERS);
     vx_array   optf_moved_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, MAX_FOUNDED_CORNERS);
-    vx_array   optf_extim_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, MAX_FOUNDED_CORNERS);
     vx_scalar  optf_estimate_s   = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &optflow_estimate);
     vx_scalar  optf_max_iter_s   = vxCreateScalar(m_Context, VX_TYPE_UINT32, &optflow_max_iter);
     vx_scalar  optf_init_estim   = vxCreateScalar(m_Context, VX_TYPE_BOOL, &optflow_init_estimate);
@@ -131,7 +130,6 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL(fast_num_corn_s);
     CHECK_NULL(fast_found_corn_s);
     CHECK_NULL(optf_moved_corn_s);
-    CHECK_NULL(optf_extim_corn_s);
     CHECK_NULL(pyramid_1);
     CHECK_NULL(pyramid_2);
     /***    End of objects    ***/
@@ -143,7 +141,7 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_1, pyramid_1) );
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_2, pyramid_2) );
     CHECK_NULL( vxOpticalFlowPyrLKNode(m_OptFlowGraph, pyramid_1, pyramid_2, fast_found_corn_s,
-                                       optf_extim_corn_s, optf_moved_corn_s, optflow_term,
+                                       fast_found_corn_s, optf_moved_corn_s, optflow_term,
                                        optf_estimate_s, optf_max_iter_s, optf_init_estim, optflow_wnd_size) );
     CHECK_NULL( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0 )) );
 
@@ -159,21 +157,34 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     memset(matr_ptr, 0, sizeof(vx_float32) * 9);
     vxCommitMatrix(prev_sum_matr, matr_ptr);
 
+    int center = m_NumMatr / 2;
     for(j = 0; j < m_NumMatr; j++)
     {
-        if( j == (m_NumMatr / 2))
+        if( j == center)
+        {
+           vx_matrix eye_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+           vx_float32 matr_ptr[9];
+           vxAccessMatrix(eye_matr, matr_ptr);
+           memset(matr_ptr, 0, sizeof(vx_float32) * 9);
+           matr_ptr[0] = matr_ptr[4] = matr_ptr[8] = 1.;
+           vxCommitMatrix(eye_matr, matr_ptr);
+
+           vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[j]);
+           vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+           CHECK_NULL(vxMatrixAddNode(m_WarpGraph, eye_matr, prev_sum_matr, coeff_s, next_matr));
+           prev_sum_matr = next_matr;
            continue;
-        int center = m_NumMatr / 2;
-        int start = j < center ? j : center - 1;
+        }
+        int start = j < center ? j : center + 1;
         int end = j > center ? j : center;
-        vx_matrix prev_mul_matr = (vx_matrix)vxGetReferenceFromDelay(m_Matrices, start);
-        for(i = start + 1; i <= end; i++)
+        vx_matrix prev_mul_matr = (vx_matrix)vxGetReferenceFromDelay(m_Matrices, end);
+        for(i = end - 1; i >= start; i--)
         {
             vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
             CHECK_NULL(vxMatrixMultiplyNode(m_WarpGraph, prev_mul_matr, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, i ), NULL, next_matr));
             prev_mul_matr = next_matr;
         }
-        if(j > m_NumMatr / 2)
+        if(j > center)
         {
            vx_matrix inv_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
            CHECK_NULL(vxMatrixInvertNode(m_WarpGraph, prev_mul_matr, inv_matr));
@@ -186,8 +197,10 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     }
     vx_enum inter = VX_INTERPOLATION_TYPE_NEAREST_NEIGHBOR;
     vx_scalar inter_s = vxCreateScalar(m_Context, VX_TYPE_ENUM, &inter);
-    vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2 + 1),
-                                              prev_sum_matr, inter_s, m_OutImage);
+    vx_matrix inv_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+    CHECK_NULL(vxMatrixInvertNode(m_WarpGraph, prev_sum_matr, inv_matr));
+    vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2),
+                                              inv_matr, inter_s, m_OutImage);
     vx_border_mode_t border = {VX_BORDER_MODE_CONSTANT, 0};
     vxSetNodeAttribute(warp_node, VX_NODE_ATTRIBUTE_BORDER_MODE, &border, sizeof(border));
     CHECK_STATUS( vxVerifyGraph(m_WarpGraph) );

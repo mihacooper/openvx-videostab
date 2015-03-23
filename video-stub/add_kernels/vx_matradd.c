@@ -34,10 +34,12 @@ static vx_status VX_CALLBACK vxMatrixAddKernel(vx_node node, vx_reference *param
                res[i * 3 + j] = matr1[i * 3 + j] + matr2[i * 3 + j];
         }
     }
+    /*
     printf("\n%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
         res[0],res[1],res[2],
         res[3],res[4],res[5],
         res[6],res[7],res[8]);
+    */
     if(use_coef)
         status |= vxCommitScalarValue(scalar, &coeff);
     status |= vxCommitMatrix(matrix1, matr1);
