@@ -28,17 +28,7 @@
         } \
     }
 
-inline vx_int32 min(vx_int32 left, vx_int32 right)
-{
-    return left < right ? left : right;
-}
-
-inline vx_int32 max(vx_int32 left, vx_int32 right)
-{
-    return left > right ? left : right;
-}
-
-VXVideoStub::VXVideoStub() :
+VXVideoStab::VXVideoStab() :
     m_CurImageId(0), m_NumImages(0), m_Images(NULL),
     m_Matrices(NULL), m_OptFlowGraph(NULL), m_WarpGraph(NULL), m_ImageAdded(vx_false_e)
 {
@@ -49,54 +39,40 @@ VXVideoStub::VXVideoStub() :
     }
 }
 
-VXVideoStub::~VXVideoStub()
+VXVideoStab::~VXVideoStab()
 {
     vxReleaseContext(&m_Context);
 }
 
-vx_status VXVideoStub::EnableDebug(const std::initializer_list<vx_enum>& zones)
+vx_status VXVideoStab::EnableDebug(const std::initializer_list<vx_enum>& zones)
 {
     for(auto i = zones.begin(); i != zones.end(); i++) \
         vx_set_debug_zone(*i);
 }
 
-#define MAX_PYRAMID_LEVELS 5
-#define MAX_FOUNDED_CORNERS 500
-
-vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 height, const vx_int32 gauss_size)
+vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 height, VideoStabParams& params)
 {
     if(m_Context == NULL)
         return VX_FAILURE;
 
     int i, j;
-    m_NumImages = gauss_size * 2 + 2;
-    m_NumMatr = gauss_size * 2 + 1;
-    /*****FAST9 params*****/
-    vx_float32 fast_thresh = 80.f; // threshold parameter of FAST9
-    vx_uint32  corners_num = 100;    // tmp value for init scalar
-    /*****OptFlow params*****/
-    vx_size optflow_wnd_size = 50;
-    vx_float32 pyramid_scale = VX_SCALE_PYRAMID_HALF;
-    vx_size    pyramid_level = min(
-                floor(log(vx_float32(optflow_wnd_size) / vx_float32(width)) / log(pyramid_scale)),
-                floor(log(vx_float32(optflow_wnd_size) / vx_float32(height)) / log(pyramid_scale))
-                );
-    pyramid_level = max(1, min(pyramid_level, MAX_PYRAMID_LEVELS));
-    vx_enum optflow_term = VX_TERM_CRITERIA_BOTH;
-    vx_float32 optflow_estimate = 0.01;
-    vx_uint32 optflow_max_iter = 100;
+    m_NumImages = params.gauss_size * 2 + 2;
+    m_NumMatr = params.gauss_size * 2 + 1;
+    /******Internal params******/
+    vx_uint32 corners_num = 100;
     vx_uint32 optflow_init_estimate = vx_false_e;
-
-    vx_float32 sigma = gauss_size * 0.7;
-    vx_float32 matr_coeffs[gauss_size * 2 + 1];
-    for (i = -gauss_size; i <= gauss_size; ++i)
-        matr_coeffs[i + gauss_size] = ( exp(-i * i / (2.f * sigma * sigma)) );
+    vx_float32 sigma = params.gauss_size * 0.7;
+    vx_float32 matr_coeffs[m_NumMatr];
+    for (i = -params.gauss_size; i <= params.gauss_size; ++i)
+        matr_coeffs[i + params.gauss_size] = ( exp(-i * i / (2.f * sigma * sigma)) );
     vx_float32 sum = 0.;
     for (i = 0; i < dimof(matr_coeffs); ++i)
         sum += matr_coeffs[i];
     sum = 1. / sum;
     for (i = 0; i < dimof(matr_coeffs); ++i)
+    {
         matr_coeffs[i] *= sum;
+    }
     /******End of params******/
 
     m_OptFlowGraph = vxCreateGraph(m_Context);
@@ -116,15 +92,15 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     /***    Create objects    ***/
     vx_matrix tmp_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
     m_Matrices = vxCreateDelay(m_Context, (vx_reference)tmp_matr, m_NumMatr);
-    vx_scalar  fast_thresh_s     = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &fast_thresh);
+    vx_scalar  fast_thresh_s     = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &params.fast_thresh);
     vx_scalar  fast_num_corn_s   = vxCreateScalar(m_Context, VX_TYPE_UINT32, &corners_num);
-    vx_array   fast_found_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, MAX_FOUNDED_CORNERS);
-    vx_array   optf_moved_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, MAX_FOUNDED_CORNERS);
-    vx_scalar  optf_estimate_s   = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &optflow_estimate);
-    vx_scalar  optf_max_iter_s   = vxCreateScalar(m_Context, VX_TYPE_UINT32, &optflow_max_iter);
+    vx_array   fast_found_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, params.fast_max_corners);
+    vx_array   optf_moved_corn_s = vxCreateArray(m_Context, VX_TYPE_KEYPOINT, params.fast_max_corners);
+    vx_scalar  optf_estimate_s   = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &params.optflow_estimate);
+    vx_scalar  optf_max_iter_s   = vxCreateScalar(m_Context, VX_TYPE_UINT32, &params.optflow_max_iter);
     vx_scalar  optf_init_estim   = vxCreateScalar(m_Context, VX_TYPE_BOOL, &optflow_init_estimate);
-    vx_pyramid pyramid_1         = vxCreatePyramid(m_Context, pyramid_level, pyramid_scale, width, height, VX_DF_IMAGE_U8);
-    vx_pyramid pyramid_2         = vxCreatePyramid(m_Context, pyramid_level, pyramid_scale, width, height, VX_DF_IMAGE_U8);
+    vx_pyramid pyramid_1         = vxCreatePyramid(m_Context, params.pyramid_level, params.pyramid_scale, width, height, VX_DF_IMAGE_U8);
+    vx_pyramid pyramid_2         = vxCreatePyramid(m_Context, params.pyramid_level, params.pyramid_scale, width, height, VX_DF_IMAGE_U8);
     /***      Check objects   ***/
     CHECK_NULL(fast_thresh_s);
     CHECK_NULL(fast_num_corn_s);
@@ -141,8 +117,8 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_1, pyramid_1) );
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_2, pyramid_2) );
     CHECK_NULL( vxOpticalFlowPyrLKNode(m_OptFlowGraph, pyramid_1, pyramid_2, fast_found_corn_s,
-                                       fast_found_corn_s, optf_moved_corn_s, optflow_term,
-                                       optf_estimate_s, optf_max_iter_s, optf_init_estim, optflow_wnd_size) );
+                                       fast_found_corn_s, optf_moved_corn_s, params.optflow_term,
+                                       optf_estimate_s, optf_max_iter_s, optf_init_estim, params.optflow_wnd_size) );
     CHECK_NULL( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0 )) );
 
     CHECK_STATUS( vxVerifyGraph(m_OptFlowGraph) );
@@ -208,7 +184,7 @@ vx_status VXVideoStub::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     /*****************/
 }
 
-vx_image VXVideoStub::NewImage()
+vx_image VXVideoStab::NewImage()
 {
     if(m_Images == NULL)
     {
@@ -230,7 +206,7 @@ vx_image VXVideoStub::NewImage()
     }
 }
 
-vx_image VXVideoStub::Calculate()
+vx_image VXVideoStab::Calculate()
 {
     if(!m_ImageAdded)
     {
