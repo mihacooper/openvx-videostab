@@ -112,7 +112,16 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
 
     CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 1 ), gray_image_1) );
     CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 0 ), gray_image_2) );
-    CHECK_NULL( vxFastCornersNode(m_OptFlowGraph, gray_image_1, fast_thresh_s, vx_false_e, fast_found_corn_s, fast_num_corn_s) );
+    /*
+    vx_float32 harr_thresh = 32768.;
+    vx_float32 harr_dist = 1.1;
+    vx_float32 harr_sens = 0.15;
+    vx_scalar harr_thresh_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &harr_thresh);
+    vx_scalar harr_dist_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &harr_dist);
+    vx_scalar harr_sens_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &harr_sens);
+    CHECK_NULL(vxHarrisCornersNode(m_OptFlowGraph, gray_image_1, harr_thresh_s, harr_dist_s, harr_sens_s, 3, 7, fast_found_corn_s, fast_num_corn_s));
+    */
+    CHECK_NULL( vxFastCornersNode(m_OptFlowGraph, gray_image_1, fast_thresh_s, vx_true_e, fast_found_corn_s, fast_num_corn_s) );
 
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_1, pyramid_1) );
     CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_2, pyramid_2) );

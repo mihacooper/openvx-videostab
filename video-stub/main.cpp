@@ -25,14 +25,14 @@ inline vx_int32 max(vx_int32 left, vx_int32 right)
 
 void InitParams(const int width, const int height, VideoStabParams& params)
 {
-    params.gauss_size = 9;
-    params.fast_max_corners = 1000;
-    params.fast_thresh      = 70.f;
+    params.gauss_size = 8;
+    params.fast_max_corners = 2000;
+    params.fast_thresh      = 50.f;
 
     params.optflow_estimate = 0.01f;
     params.optflow_max_iter = 100;
-    params.optflow_term     = VX_TERM_CRITERIA_BOTH;
-    params.optflow_wnd_size = 50;
+    params.optflow_term     = VX_TERM_CRITERIA_EPSILON;
+    params.optflow_wnd_size = 21;
 
     params.pyramid_scale    = VX_SCALE_PYRAMID_HALF;
     params.pyramid_level    = min(
@@ -96,9 +96,9 @@ int main(int argc, char* argv[])
                 break;
             }
         }
-        //cv::imshow(WINDOW_NAME, cvIMage);
-        //cv::waitKey(5);
         cv::Mat mergedImg = MergeImage(resImg, cvImage);
+        //cv::imshow(WINDOW_NAME, mergedImg);
+        //cv::waitKey(5);
         cvWriter << mergedImg;
         counter++;
         std::cout << counter << " processed frames" << std::endl;

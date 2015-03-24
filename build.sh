@@ -27,9 +27,9 @@ export BIN_DIRECTORY=${PWD}/bin
 export LIBRARY_DIRECTORY=${PWD}/lib
 export BUILD_DIRECTORY=${PWD}/build
 export CMAKE_TOOLS_DIR=${PWD}/cmake-tools
-export CMAKE_FLAGS="-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8"
-export CXX_FLAGS="-O3 -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings -std=c++11 -Wno-literal-suffix"
-export C_FLAGS="-O3 -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings" #-std=c99
+#export CMAKE_FLAGS="-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8"
+export CXX_FLAGS="-O2 -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings -std=c++11 -Wno-literal-suffix"
+export C_FLAGS="-O2 -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings" #-std=c99
 
 ############################################
 # cmake
