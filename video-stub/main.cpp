@@ -27,7 +27,7 @@ void InitParams(const int width, const int height, VideoStabParams& params)
 {
     params.gauss_size = 8;
     params.fast_max_corners = 2000;
-    params.fast_thresh      = 50.f;
+    params.fast_thresh      = 35.f;
 
     params.optflow_estimate = 0.01f;
     params.optflow_max_iter = 100;

@@ -72,32 +72,16 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     /*** CV find homography ***/
     cv::Mat_<float> cv_matr;
     cv_matr = cv::findHomography(cv_points_from, cv_points_to, CV_RANSAC);
-    //double det = cv::determinant(cv_matr);
-    //cv_matr *= (1./det);
+    /*
     printf("%lf,%lf,%lf\n%lf,%lf,%lf\n%lf,%lf,%lf\n",
         cv_matr.at<float>(0,0), cv_matr.at<float>(0,1), cv_matr.at<float>(0,2),
         cv_matr.at<float>(1,0), cv_matr.at<float>(1,1), cv_matr.at<float>(1,2),
         cv_matr.at<float>(2,0), cv_matr.at<float>(2,1), cv_matr.at<float>(2,2));
-    //cv_matr = cv_matr.inv();
-
-    //printf("\n%lf,%lf,%lf\n%lf,%lf,%lf\n%lf,%lf,%lf\n",
-    //    cv_matr.at<TYPE>(0,0), cv_matr.at<TYPE>(0,1), cv_matr.at<TYPE>(0,2),
-    //    cv_matr.at<TYPE>(1,0), cv_matr.at<TYPE>(1,1), cv_matr.at<TYPE>(1,2),
-    //    cv_matr.at<TYPE>(2,0), cv_matr.at<TYPE>(2,1), cv_matr.at<TYPE>(2,2));
-    /**************************/
-
+    */
     vx_float32 matr_buff[9];
     status |= vxAccessMatrix(matrix, (void*)matr_buff);
     memcpy(matr_buff, cv_matr.data, sizeof(vx_float32) * 9);
 
-    /*
-    printf("|*******FindWarp****|\n");
-    printf("%f,%f,%f\n%f,%f,%f\n%f,%f,%f\n",
-        matr_buff[0],matr_buff[1],matr_buff[2],
-        matr_buff[3],matr_buff[4],matr_buff[5],
-        matr_buff[6],matr_buff[7],matr_buff[8]);
-    printf("|*******************|\n");
-   */
     status |= vxCommitMatrix(matrix, (void*)matr_buff);
     return status;
 }

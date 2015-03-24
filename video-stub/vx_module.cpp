@@ -56,13 +56,13 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
         return VX_FAILURE;
 
     int i, j;
-    m_NumImages = params.gauss_size * 2 + 2;
-    m_NumMatr = params.gauss_size * 2 + 1;
+    m_NumImages = params.gauss_size * 2 + 1;
+    m_NumMatr = params.gauss_size * 2;
     /******Internal params******/
     vx_uint32 corners_num = 100;
     vx_uint32 optflow_init_estimate = vx_false_e;
     vx_float32 sigma = params.gauss_size * 0.7;
-    vx_float32 matr_coeffs[m_NumMatr];
+    vx_float32 matr_coeffs[m_NumImages];
     for (i = -params.gauss_size; i <= params.gauss_size; ++i)
         matr_coeffs[i + params.gauss_size] = ( exp(-i * i / (2.f * sigma * sigma)) );
     vx_float32 sum = 0.;
@@ -158,10 +158,10 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
            vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
            CHECK_NULL(vxMatrixAddNode(m_WarpGraph, eye_matr, prev_sum_matr, coeff_s, next_matr));
            prev_sum_matr = next_matr;
-           continue;
         }
-        int start = j < center ? j : center + 1;
-        int end = j > center ? j : center;
+        int start = j < center ? j : center;
+        int end = j >= center ? j : center - 1;
+        int coef_ind = j >= center ? j + 1 : j;
         vx_matrix prev_mul_matr = (vx_matrix)vxGetReferenceFromDelay(m_Matrices, end);
         for(i = end - 1; i >= start; i--)
         {
@@ -175,7 +175,7 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
            CHECK_NULL(vxMatrixInvertNode(m_WarpGraph, prev_mul_matr, inv_matr));
            prev_mul_matr = inv_matr;
         }
-        vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[j]);
+        vx_scalar coeff_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &matr_coeffs[coef_ind]);
         vx_matrix next_matr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
         CHECK_NULL(vxMatrixAddNode(m_WarpGraph, prev_mul_matr, prev_sum_matr, coeff_s, next_matr));
         prev_sum_matr = next_matr;
