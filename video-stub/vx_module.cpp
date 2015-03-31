@@ -2,7 +2,8 @@
 #include "math.h"
 #include "memory.h"
 #include <cstdio>
-
+#include <string>
+#include <ctime>
 
 #define INIT_DEBUG(zones, num) \
     { \
@@ -18,6 +19,16 @@
             return VX_FAILURE; \
         } \
     }
+
+#define CHECK_SAVE_NODE(var, name, cont) \
+    { \
+        vx_node node = (var);\
+        CHECK_NULL(node);\
+        (cont).insert(std::make_pair(name, node));\
+    }
+
+#define CHECK_SAVE_OPT_NODE(var, name) CHECK_SAVE_NODE(var, name, m_OptFlowNodes)
+#define CHECK_SAVE_WARP_NODE(var, name) CHECK_SAVE_NODE(var, name, m_WarpNodes)
 
 #define CHECK_STATUS(var) \
     { \
@@ -110,8 +121,8 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL(pyramid_2);
     /***    End of objects    ***/
 
-    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 1 ), gray_image_1) );
-    CHECK_NULL( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 0 ), gray_image_2) );
+    CHECK_SAVE_OPT_NODE( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 1 ), gray_image_1), "RGBtoGray_old");
+    CHECK_SAVE_OPT_NODE( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 0 ), gray_image_2), "RGBtoGray_new");
     /*
     vx_float32 harr_thresh = 32768.;
     vx_float32 harr_dist = 1.1;
@@ -121,14 +132,14 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     vx_scalar harr_sens_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &harr_sens);
     CHECK_NULL(vxHarrisCornersNode(m_OptFlowGraph, gray_image_1, harr_thresh_s, harr_dist_s, harr_sens_s, 3, 7, fast_found_corn_s, fast_num_corn_s));
     */
-    CHECK_NULL( vxFastCornersNode(m_OptFlowGraph, gray_image_1, fast_thresh_s, vx_true_e, fast_found_corn_s, fast_num_corn_s) );
+    CHECK_SAVE_OPT_NODE( vxFastCornersNode(m_OptFlowGraph, gray_image_1, fast_thresh_s, vx_true_e, fast_found_corn_s, fast_num_corn_s), "FAST");
 
-    CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_1, pyramid_1) );
-    CHECK_NULL( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_2, pyramid_2) );
-    CHECK_NULL( vxOpticalFlowPyrLKNode(m_OptFlowGraph, pyramid_1, pyramid_2, fast_found_corn_s,
+    CHECK_SAVE_OPT_NODE( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_1, pyramid_1), "GaussianPyr_old");
+    CHECK_SAVE_OPT_NODE( vxGaussianPyramidNode(m_OptFlowGraph, gray_image_2, pyramid_2), "GaussianPyr_new");
+    CHECK_SAVE_OPT_NODE( vxOpticalFlowPyrLKNode(m_OptFlowGraph, pyramid_1, pyramid_2, fast_found_corn_s,
                                        fast_found_corn_s, optf_moved_corn_s, params.optflow_term,
-                                       optf_estimate_s, optf_max_iter_s, optf_init_estim, params.optflow_wnd_size) );
-    CHECK_NULL( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0 )) );
+                                       optf_estimate_s, optf_max_iter_s, optf_init_estim, params.optflow_wnd_size), "OptFlow");
+    CHECK_SAVE_OPT_NODE( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0 )), "FindWarp");
 
     CHECK_STATUS( vxVerifyGraph(m_OptFlowGraph) );
 
@@ -186,6 +197,7 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     CHECK_NULL(vxMatrixInvertNode(m_WarpGraph, prev_sum_matr, inv_matr));
     vx_node warp_node = vxWarpPerspectiveRGBNode(m_WarpGraph, (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2),
                                               inv_matr, inter_s, m_OutImage);
+    CHECK_SAVE_WARP_NODE(warp_node, "WarpPerspective");
     vx_border_mode_t border = {VX_BORDER_MODE_CONSTANT, 0};
     vxSetNodeAttribute(warp_node, VX_NODE_ATTRIBUTE_BORDER_MODE, &border, sizeof(border));
     CHECK_STATUS( vxVerifyGraph(m_WarpGraph) );
@@ -246,5 +258,39 @@ vx_image VXVideoStab::Calculate()
     vxAgeDelay(m_Matrices);
     m_ImageAdded = vx_false_e;
     return ret;
+}
+
+#define BILLION (1000000000)
+
+double VXVideoStab::AvgPerf(vx_perf_t& perf)
+{
+    return ((double)perf.avg) / BILLION;
+}
+
+void VXVideoStab::NodesPerf(std::map<std::string, vx_node>& nodes)
+{
+    for(auto it = nodes.begin(); it != nodes.end(); it++)
+    {
+        vxQueryNode(it->second, VX_NODE_ATTRIBUTE_PERFORMANCE, &perf, sizeof(perf));
+        printf("\t%s = %lf\n", it->first.c_str(), AvgPerf(perf));
+    }
+}
+
+void VXVideoStab::PrintPerf()
+{
+    vx_perf_t perf;
+    vxQueryGraph(m_OptFlowGraph, VX_GRAPH_ATTRIBUTE_PERFORMANCE, &perf, sizeof(perf));
+    printf("OptFlow graph(%lf):\n", AvgPerf(perf));
+    for(auto it = m_OptFlowNodes.begin(); it != m_OptFlowNodes.end(); it++)
+    {
+        vxQueryNode(it->second, VX_NODE_ATTRIBUTE_PERFORMANCE, &perf, sizeof(perf));
+        printf("\t%s = %lf\n", it->first.c_str(), AvgPerf(perf));
+    }
+    printf("Warp graph:\n");
+    for(auto it = m_WarpNodes.begin(); it != m_WarpNodes.end(); it++)
+    {
+        vxQueryNode(it->second, VX_NODE_ATTRIBUTE_PERFORMANCE, &perf, sizeof(perf));
+        printf("\t%s = %lf\n", it->first.c_str(), AvgPerf(perf));
+    }
 }
 

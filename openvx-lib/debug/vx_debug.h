@@ -76,7 +76,7 @@ enum vx_debug_zone_e {
 #if defined(_WIN32) && !defined(__GNUC__)
 #define VX_PRINT(zone, message, ...) do { vx_print(zone, "[%s:%u] "message, __FUNCTION__, __LINE__, __VA_ARGS__); } while (0)
 #else
-#define VX_PRINT(zone, message, ...) do { vx_print(zone, "[%s:%u] "message, __FUNCTION__, __LINE__, ## __VA_ARGS__); } while (0)
+#define VX_PRINT(zone, message, ...) do { vx_print(zone, "[%s:%u] " message, __FUNCTION__, __LINE__, ##__VA_ARGS__); } while (0)
 #endif
 
 /*! \def VX_PRINT

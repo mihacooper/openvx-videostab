@@ -3,6 +3,8 @@
 
 #include <initializer_list>
 #include <vector>
+#include <map>
+#include <string>
 #include "VX/vx.h"
 #include "vx_debug.h"
 #include "add_kernels/add_kernels.h"
@@ -39,6 +41,9 @@ public:
     vx_status EnableDebug(const std::initializer_list<vx_enum>& zones);
     vx_image  NewImage();
     vx_image  Calculate();
+    void      PrintPerf();
+    double    AvgPerf(vx_perf_t& perf);
+    void      NodesPerf(std::map<std::string, vx_node>& nodes);
 private:
     vx_context m_Context;
     vx_graph   m_OptFlowGraph;
@@ -51,6 +56,8 @@ private:
     vx_int32   m_NumMatr;
     vx_int32   m_CurImageId;
     vx_bool    m_ImageAdded;
+    std::map<std::string, vx_node> m_OptFlowNodes;
+    std::map<std::string, vx_node> m_WarpNodes;
 };
 
 #endif // VX_MODULE_H

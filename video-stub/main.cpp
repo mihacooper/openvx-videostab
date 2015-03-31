@@ -27,7 +27,7 @@ void InitParams(const int width, const int height, VideoStabParams& params)
 {
     params.gauss_size = 8;
     params.fast_max_corners = 2000;
-    params.fast_thresh      = 35.f;
+    params.fast_thresh      = 50.f;
 
     params.optflow_estimate = 0.01f;
     params.optflow_max_iter = 100;
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     cv::VideoWriter  cvWriter;
 
     VXVideoStab vstub;
-    vstub.EnableDebug({VX_ZONE_ERROR, VX_ZONE_LOG/*, VX_ZONE_DELAY, VX_ZONE_IMAGE*/});
+    vstub.EnableDebug({VX_ZONE_ERROR/*, VX_ZONE_LOG, VX_ZONE_DELAY, VX_ZONE_IMAGE*/});
     VideoStabParams vs_params;
 
     cv::Mat cvImage, resImg;
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
                 break;
             if(!cvWriter.open(argv[2], cvReader.get(CV_CAP_PROP_FOURCC), cvReader.get(CV_CAP_PROP_FPS), cv::Size(cvImage.cols, cvImage.rows * 2)))
             {
-                std::cout << " Cann't open output video file!" << std::endl;
+                std::cout << " Can't open output video file!" << std::endl;
                 break;
             }
             first = false;
@@ -101,8 +101,12 @@ int main(int argc, char* argv[])
         //cv::waitKey(5);
         cvWriter << mergedImg;
         counter++;
+        if(counter == 30){ break;}
         std::cout << counter << " processed frames" << std::endl;
     }
     cvWriter.release();
+    printf("**** Performance ****\n");
+    vstub.PrintPerf();
+    printf("*********************\n");
     return 0;
 }
