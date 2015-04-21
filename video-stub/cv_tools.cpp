@@ -16,7 +16,7 @@ void _VX2CV(vx_uint8* cv, vx_uint8* vx)
 
 typedef void(*ConvKernel)(vx_uint8* a, vx_uint8* b);
 
-bool Converter(vx_image vxImage, cv::Mat cvImage, ConvKernel kernel)
+bool Converter(vx_image vxImage, cv::Mat& cvImage, ConvKernel kernel)
 {
     if(cvImage.type() != CV_8UC3)
     {
@@ -76,8 +76,15 @@ bool CV2VX(vx_image vxImage, cv::Mat cvImage)
     return Converter(vxImage, cvImage, &_CV2VX);
 }
 
-bool VX2CV(vx_image vxImage, cv::Mat cvImage)
+bool VX2CV(vx_image vxImage, cv::Mat& cvImage)
 {
+    if(cvImage.empty())
+    {
+        vx_uint32 width = 0, height = 0;
+        vxQueryImage(vxImage, VX_IMAGE_ATTRIBUTE_WIDTH,  &width,  sizeof(width));
+        vxQueryImage(vxImage, VX_IMAGE_ATTRIBUTE_HEIGHT, &height, sizeof(height));
+        cvImage.create(height, width, CV_8UC3);
+    }
     return Converter(vxImage, cvImage, &_VX2CV);
 }
 

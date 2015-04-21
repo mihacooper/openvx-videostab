@@ -49,7 +49,8 @@ int main(int argc, char* argv[])
         printf("Use ./%s <input_video> <output_video>\n", argv[0]);
         return 0;
     }
-
+    std::vector<vx_image> vxImages;
+    vxImages.reserve(500);
     cv::VideoCapture cvReader(argv[1]);
     cv::VideoWriter  cvWriter;
 
@@ -74,7 +75,7 @@ int main(int argc, char* argv[])
             InitParams(cvImage.cols, cvImage.rows, vs_params);
             if(vstub.CreatePipeline(cvImage.cols, cvImage.rows, vs_params) != VX_SUCCESS)
                 break;
-            if(!cvWriter.open(argv[2], cvReader.get(CV_CAP_PROP_FOURCC), cvReader.get(CV_CAP_PROP_FPS), cv::Size(cvImage.cols, cvImage.rows * 2)))
+            if(!cvWriter.open(argv[2], cvReader.get(CV_CAP_PROP_FOURCC), cvReader.get(CV_CAP_PROP_FPS), cv::Size(cvImage.cols, cvImage.rows)))
             {
                 std::cout << " Can't open output video file!" << std::endl;
                 break;
@@ -89,21 +90,30 @@ int main(int argc, char* argv[])
         }
         vx_image out = vstub.Calculate();
         if(out)
-        {
-            if(!VX2CV(out, resImg))
-            {
-                printf("Can't convert image VX->CV. Stop!\n");
-                break;
-            }
-        }
-        cv::Mat mergedImg = MergeImage(resImg, cvImage);
-        //cv::imshow(WINDOW_NAME, mergedImg);
-        //cv::waitKey(5);
-        cvWriter << mergedImg;
+            vxImages.push_back(out);
+        else
+            cvWriter << resImg;
         counter++;
-        if(counter == 30){ break;}
+        if(counter == 50) break;
         std::cout << counter << " processed frames" << std::endl;
     }
+    cv::Mat cvimg;
+    for(int i = 0; i < vxImages.size(); i++)
+    {
+        vx_image img = vxImages[i];
+        vx_image cuted = vstub.CutImage(img);
+        if(!VX2CV(cuted, cvimg))
+        {
+            printf("Can't convert image VX->CV. Stop!\n");
+            break;
+        }
+        //cv::Mat mergedImg = MergeImage(resImg, cvImage);
+        //cv::imshow(WINDOW_NAME, mergedImg);
+        //cv::waitKey(5);
+        cvWriter << cvimg;
+        std::cout << i << " cuted frames" << std::endl;
+    }
+
     cvWriter.release();
     printf("**** Performance ****\n");
     vstub.PrintPerf();
