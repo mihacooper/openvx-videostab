@@ -307,39 +307,50 @@ vx_int32 VXVideoStab::DefineValidRect(vx_image image, vx_matrix matrix)
     return max_area;
 }
 
+vx_status VXVideoStab::EnableCuting(vx_uint32 width, vx_uint32 height)
+{
+   vx_float32 prop = (vx_float32)(width) / height;
+   vx_uint32 sub_height = sqrt((vx_float32)m_MaxArea / prop);
+   vx_uint32 sub_width  = sub_height * prop;
+   vx_rectangle_t rect;
+   rect.start_x = sub_width;
+   rect.start_y = sub_height;
+   rect.end_x   = width - sub_width;
+   rect.end_y   = height - sub_height;
+
+   m_CutGraph = vxCreateGraph(m_Context);
+   vx_image chan[3], scaled[3];
+   vx_enum chanels[] = {VX_CHANNEL_R, VX_CHANNEL_G, VX_CHANNEL_B};
+   vx_scalar sx = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.start_x);
+   vx_scalar sy = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.start_y);
+   vx_scalar ex = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.end_x);
+   vx_scalar ey = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.end_y);
+   vx_image cuted = vxCreateVirtualImage(m_CutGraph, rect.end_x - rect.start_x, rect.end_y - rect.start_y, VX_DF_IMAGE_RGB);
+   vx_image fakeCutInput = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
+   m_CutedImage = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
+
+   m_CutNode = vxCutNode(m_CutGraph, fakeCutInput , sx, sy, ex, ey, cuted);
+   for(int i = 0; i < 3; i++)
+   {
+       chan[i] = vxCreateVirtualImage(m_CutGraph, rect.end_x - rect.start_x, rect.end_y - rect.start_y, VX_DF_IMAGE_U8);
+       scaled[i] = vxCreateVirtualImage(m_CutGraph, width, height, VX_DF_IMAGE_U8);
+       vxChannelExtractNode(m_CutGraph, cuted, chanels[i], chan[i]);
+       vxScaleImageNode(m_CutGraph, chan[i], scaled[i], VX_INTERPOLATION_TYPE_NEAREST_NEIGHBOR);
+   }
+   vxChannelCombineNode(m_CutGraph, scaled[0], scaled[1], scaled[2], NULL, m_CutedImage);
+
+   CHECK_STATUS(vxVerifyGraph(m_CutGraph));
+   return VX_SUCCESS;
+}
+
 vx_image VXVideoStab::CutImage(vx_image input)
 {
-    vx_uint32 width, height;
-    vx_rectangle_t rect;
-    vxQueryImage(input, VX_IMAGE_ATTRIBUTE_WIDTH,  &width, sizeof(width));
-    vxQueryImage(input, VX_IMAGE_ATTRIBUTE_HEIGHT, &height, sizeof(height));
-
-    vx_float32 prop = (vx_float32)(width) / height;
-    vx_uint32 sub_height = sqrt((vx_float32)m_MaxArea / prop);
-    vx_uint32 sub_width  = sub_height * prop;
-    rect.start_x = sub_width;
-    rect.start_y = sub_height;
-    rect.end_x   = width - sub_width;
-    rect.end_y   = height - sub_height;
-
-    vx_graph graph = vxCreateGraph(m_Context);
-    vx_scalar rect_s = vxCreateScalar(m_Context, VX_TYPE_RECTANGLE, &rect);
-    vx_image cuted = vxCreateVirtualImage(graph, rect.end_x - rect.start_x, rect.end_y - rect.start_y, VX_DF_IMAGE_RGB);
-    vxCutNode(graph, input, rect_s, cuted);
-    vx_image chan[3], scaled[3];
-    for(int i = 0; i < 3; i++)
+    vxSetParameterByIndex(m_CutNode, 0, (vx_reference)input);
+    if(vxProcessGraph(m_CutGraph) != VX_SUCCESS)
     {
-        chan[i] = vxCreateVirtualImage(graph, rect.end_x - rect.start_x, rect.end_y - rect.start_y, VX_DF_IMAGE_U8);
-        scaled[i] = vxCreateVirtualImage(graph, width, height, VX_DF_IMAGE_U8);
-        vxChannelExtractNode(graph, cuted, i, chan[i]);
-        vxScaleImageNode(graph, chan[i], scaled[i], VX_INTERPOLATION_TYPE_NEAREST_NEIGHBOR);
+       printf("Error: process graph failure");
     }
-    vx_image res = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
-    vxChannelCombineNode(graph, scaled[0], scaled[1], scaled[2], NULL, res);
-
-    vxVerifyGraph(graph);
-    vxProcessGraph(graph);
-    return res;
+    return m_CutedImage;
 }
 
 vx_image VXVideoStab::Calculate()

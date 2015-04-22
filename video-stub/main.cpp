@@ -55,9 +55,9 @@ int main(int argc, char* argv[])
     cv::VideoWriter  cvWriter;
 
     VXVideoStab vstub;
-    vstub.EnableDebug({VX_ZONE_ERROR/*, VX_ZONE_LOG, VX_ZONE_DELAY, VX_ZONE_IMAGE*/});
+    vstub.EnableDebug({VX_ZONE_ERROR});//, VX_ZONE_LOG, VX_ZONE_DELAY, VX_ZONE_IMAGE, VX_ZONE_GRAPH});
     VideoStabParams vs_params;
-
+    int width, height;
     cv::Mat cvImage, resImg;
     bool first = true;
     int counter = 0;
@@ -72,10 +72,12 @@ int main(int argc, char* argv[])
         }
         if(first)
         {
-            InitParams(cvImage.cols, cvImage.rows, vs_params);
-            if(vstub.CreatePipeline(cvImage.cols, cvImage.rows, vs_params) != VX_SUCCESS)
+            width = cvImage.cols;
+            height = cvImage.rows;
+            InitParams(width, height, vs_params);
+            if(vstub.CreatePipeline(width, height, vs_params) != VX_SUCCESS)
                 break;
-            if(!cvWriter.open(argv[2], cvReader.get(CV_CAP_PROP_FOURCC), cvReader.get(CV_CAP_PROP_FPS), cv::Size(cvImage.cols, cvImage.rows)))
+            if(!cvWriter.open(argv[2], cvReader.get(CV_CAP_PROP_FOURCC), cvReader.get(CV_CAP_PROP_FPS), cv::Size(width, height)))
             {
                 std::cout << " Can't open output video file!" << std::endl;
                 break;
@@ -94,9 +96,12 @@ int main(int argc, char* argv[])
         else
             cvWriter << resImg;
         counter++;
-        if(counter == 50) break;
+        if(counter == 100) break;
         std::cout << counter << " processed frames" << std::endl;
     }
+
+    vstub.EnableCuting(width, height);
+
     cv::Mat cvimg;
     for(int i = 0; i < vxImages.size(); i++)
     {

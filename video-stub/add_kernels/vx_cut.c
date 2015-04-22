@@ -5,25 +5,38 @@ static vx_status VX_CALLBACK vxCutKernel(vx_node node, vx_reference *parameters,
 {
     vx_status status = VX_SUCCESS;
     vx_image input = (vx_image)parameters[0];
-    vx_image output = (vx_image)parameters[2];
-    vx_scalar scalar  = (vx_scalar)parameters[1];
-    vx_rectangle_t src_rect, dst_rect;
+    vx_image output = (vx_image)parameters[5];
+    vx_scalar scalar[4];
+    vx_uint32 pnts[4];
+    vx_rectangle_t rect, dst_rect;
     vx_imagepatch_addressing_t dst_addr, src_addr;
     void *dst_buff = NULL, *src_buff = NULL;
 
-    status = vxAccessScalarValue(scalar, &src_rect);
-    if(status != VX_SUCCESS)
+    int i, x, y;
+    for(i = 0; i < 4; i++)
     {
-        VX_PRINT(VX_ZONE_ERROR, "Cann't access to input parameters(%d)!\n", status);
-        return status;
+       scalar[i] = (vx_scalar)parameters[i + 1];
+       status |= vxAccessScalarValue(scalar[i], &pnts[i]);
+       status |= vxCommitScalarValue(scalar[i], &pnts[i]);
     }
-
-    status  = vxGetValidRegionImage(output, &dst_rect);
-    status |= vxAccessImagePatch(input, &src_rect, 0, &src_addr, (void **)&src_buff, VX_READ_AND_WRITE);
+    rect.start_x = pnts[0]; rect.start_y = pnts[1];
+    rect.end_x = pnts[2]; rect.end_y = pnts[3];
+    printf("\t%d, %d, %d, %d\n", pnts[0], pnts[1], pnts[2], pnts[3]);
+    //status |= vxGetValidRegionImage(input, &rect);
+    status |= vxGetValidRegionImage(output, &dst_rect);
+    status |= vxAccessImagePatch(input, &rect, 0, &src_addr, (void **)&src_buff, VX_READ_AND_WRITE);
     status |= vxAccessImagePatch(output, &dst_rect, 0, &dst_addr, (void **)&dst_buff, VX_READ_AND_WRITE);
+    for (y = 0; y < src_addr.dim_y; y++)
+    {
+        for (x = 0; x < src_addr.dim_x; x++)
+        {
+            vx_uint8* dst = (vx_uint8*)vxFormatImagePatchAddress2d(dst_buff, x, y, &dst_addr);
+            vx_uint8* src = (vx_uint8*)vxFormatImagePatchAddress2d(src_buff, x, y, &src_addr);
+            memcpy(dst, src, 3);
+        }
+    }
     status |= vxCommitImagePatch(input, NULL, 0, &src_addr, src_buff);
-    status |= vxCommitImagePatch(output, &dst_rect, 0, &dst_addr, src_buff);
-    status |= vxCommitScalarValue(scalar, &src_rect);
+    status |= vxCommitImagePatch(output, &dst_rect, 0, &dst_addr, dst_buff);
     return status;
 }
 
@@ -46,7 +59,7 @@ static vx_status VX_CALLBACK vxCutInputValidator(vx_node node, vx_uint32 index)
         }
         vxReleaseParameter(&param);
     }
-    if (index == 1)
+    if (index > 0 && index < 5)
     {
         vx_parameter param = vxGetParameterByIndex(node, index);
         if (param)
@@ -57,16 +70,9 @@ static vx_status VX_CALLBACK vxCutInputValidator(vx_node node, vx_uint32 index)
             {
                 vx_enum data_type = 0;
                 vxQueryScalar(scalar, VX_SCALAR_ATTRIBUTE_TYPE, &data_type, sizeof(data_type));
-                if ((data_type == VX_TYPE_RECTANGLE))
+                if ((data_type == VX_TYPE_UINT32))
                 {
-                    vx_rectangle_t rect = {0, 0, 0, 0};
-                    vxAccessScalarValue(scalar, &rect);
-                    if(rect.start_x >= 0 && rect.start_y >= 0
-                       && rect.end_x > rect.start_x && rect.end_y >= rect.start_y)
-                    {
-                        status = VX_SUCCESS;
-                    }
-                    vxCommitScalarValue(scalar, &rect);
+                   status = VX_SUCCESS;
                 }
                 vxReleaseScalar(&scalar);
             }
@@ -79,34 +85,43 @@ static vx_status VX_CALLBACK vxCutInputValidator(vx_node node, vx_uint32 index)
 static vx_status VX_CALLBACK vxCutOutputValidator(vx_node node, vx_uint32 index, vx_meta_format_t *ptr)
 {
     vx_status status = VX_ERROR_INVALID_PARAMETERS;
-    if (index == 2)
+    if (index == 5)
     {
-        vx_parameter param = vxGetParameterByIndex(node, 1);
-        if (param)
-        {
-            vx_scalar scalar;
-            vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, &scalar, sizeof(scalar));
-            if (scalar)
-            {
-                vx_rectangle_t rect = {0, 0, 0, 0};
-                vxAccessScalarValue(scalar, &rect);
-                vx_uint32 width = rect.end_x - rect.start_x,
-                          height = rect.end_y - rect.start_y;
-                ptr->type = VX_TYPE_IMAGE;
-                ptr->dim.image.format = VX_DF_IMAGE_RGB;
-                ptr->dim.image.width = width;
-                ptr->dim.image.height = height;
+       vx_parameter params[4];
+       vx_uint32 pnts[4];
+       int i;
+       for(i = 0; i < 4; i++)
+       {
+          status = VX_ERROR_INVALID_PARAMETERS;
+          params[i] = vxGetParameterByIndex(node, i + 1);
+          if (params[i])
+          {
+             vx_scalar scalar;
+             vxQueryParameter(params[i], VX_PARAMETER_ATTRIBUTE_REF, &scalar, sizeof(scalar));
+             if (scalar)
+             {
+                vxAccessScalarValue(scalar, &pnts[i]);
                 status = VX_SUCCESS;
-                vxCommitScalarValue(scalar, &rect);
-            }
-            vxReleaseParameter(&param);
-        }
+                vxCommitScalarValue(scalar, &pnts[i]);
+             }
+          }
+          vxReleaseParameter(&params[i]);
+       }
+       if(status != VX_SUCCESS)
+          return status;
+       ptr->type = VX_TYPE_IMAGE;
+       ptr->dim.image.format = VX_DF_IMAGE_RGB;
+       ptr->dim.image.width = pnts[2] - pnts[0];
+       ptr->dim.image.height = pnts[3] - pnts[1];
     }
-    return VX_SUCCESS;
+    return status;
 }
 
 static vx_param_description_t add_cut_kernel_params[] = {
     {VX_INPUT,  VX_TYPE_IMAGE,  VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
+    {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED},
     {VX_OUTPUT, VX_TYPE_IMAGE,  VX_PARAMETER_STATE_REQUIRED},
 };

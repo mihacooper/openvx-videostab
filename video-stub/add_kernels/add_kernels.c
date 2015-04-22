@@ -121,7 +121,7 @@ VX_SAMPLE_API vx_node vxMatrixInvertNode(vx_graph graph, vx_matrix input, vx_mat
     return node;
 }
 
-VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar rect,vx_image output)
+VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar left, vx_scalar right, vx_scalar top, vx_scalar bottom, vx_image output)
 {
     vx_node node = 0;
     vx_context context = vxGetContext((vx_reference)graph);
@@ -130,7 +130,10 @@ VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar rect,v
     {
         vx_reference params[] = {
             (vx_reference)input,
-            (vx_reference)rect,
+            (vx_reference)left,
+            (vx_reference)right,
+            (vx_reference)top,
+            (vx_reference)bottom,
             (vx_reference)output
         };
         node = vxCreateNodeByStructure(graph,

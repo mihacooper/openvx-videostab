@@ -54,7 +54,7 @@ VX_SAMPLE_API vx_node vxWarpPerspectiveRGBNode(vx_graph graph, vx_image input, v
 VX_SAMPLE_API vx_node vxMatrixMultiplyNode(vx_graph graph, vx_matrix input1, vx_matrix input2, vx_scalar coeff, vx_matrix output);
 VX_SAMPLE_API vx_node vxMatrixAddNode(vx_graph graph, vx_matrix input1, vx_matrix input2, vx_scalar coeff, vx_matrix output);
 VX_SAMPLE_API vx_node vxMatrixInvertNode(vx_graph graph, vx_matrix input, vx_matrix output);
-VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar rect,vx_image output);
+VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar left, vx_scalar right, vx_scalar top, vx_scalar bottom, vx_image output);
 
 #ifdef __cplusplus
 }

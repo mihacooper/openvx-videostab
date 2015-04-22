@@ -45,6 +45,7 @@ public:
     double    AvgPerf(vx_perf_t& perf);
     void      NodesPerf(std::map<std::string, vx_node>& nodes);
     vx_image  CutImage(vx_image input);
+    vx_status EnableCuting(vx_uint32 width, vx_uint32 height);
 private:
     vx_image  CopyImage(vx_image input);
     vx_int32  DefineValidRect(vx_image image, vx_matrix matrix);
@@ -63,6 +64,10 @@ private:
     vx_int32   m_CurImageId;
     vx_bool    m_ImageAdded;
     vx_int32   m_MaxArea;
+
+    vx_graph   m_CutGraph;
+    vx_image   m_CutedImage;
+    vx_node    m_CutNode;
     std::map<std::string, vx_node> m_OptFlowNodes;
     std::map<std::string, vx_node> m_WarpNodes;
 };
