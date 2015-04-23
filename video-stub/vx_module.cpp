@@ -143,9 +143,7 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
                                        optf_estimate_s, optf_max_iter_s, optf_init_estim, params.optflow_wnd_size), "OptFlow");
     CHECK_SAVE_OPT_NODE( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0 )), "FindWarp");
 
-    vx_set_debug_zone(VX_ZONE_GRAPH);
     CHECK_STATUS( vxVerifyGraph(m_OptFlowGraph) );
-    vx_clr_debug_zone(VX_ZONE_GRAPH);
 
     /*** Warp Graph***/
     m_WarpGraph = vxCreateGraph(m_Context);
@@ -384,6 +382,10 @@ vx_image VXVideoStab::Calculate()
         vx_int32 area = DefineValidRect(m_OutImage, m_ResMatr);
         m_MaxArea = max(m_MaxArea, area);
         m_CurImageId--;
+    }
+    else
+    {
+        //ret = CopyImage((vx_image)vxGetReferenceFromDelay(m_Images, 0));
     }
     vxAgeDelay(m_Images);
     vxAgeDelay(m_Matrices);

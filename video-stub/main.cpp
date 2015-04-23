@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     cv::VideoWriter  cvWriter;
 
     VXVideoStab vstub;
-    vstub.EnableDebug({VX_ZONE_ERROR, VX_ZONE_LOG});
+    vstub.EnableDebug({VX_ZONE_ERROR});
     VideoStabParams vs_params;
     int width, height;
     cv::Mat cvImage, resImg;
@@ -92,10 +92,10 @@ int main(int argc, char* argv[])
         vx_image out = vstub.Calculate();
         if(out)
             vxImages.push_back(out);
-        else
-            cvWriter << resImg;
+        //else
+        //    cvWriter << resImg;
         counter++;
-        //if(counter == 100) break;
+        //if(counter == 30) break;
         std::cout << counter << " processed frames" << std::endl;
     }
 
