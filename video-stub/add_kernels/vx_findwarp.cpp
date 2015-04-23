@@ -70,8 +70,9 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     VX_PRINT(VX_ZONE_LOG, "Number of points = (%d)!\n", cv_points_from.size());
 
     /*** CV find homography ***/
-    cv::Mat_<float> cv_matr;
-    cv_matr = cv::findHomography(cv_points_from, cv_points_to, CV_RANSAC);
+    cv::Mat_<float> cv_matr = cv::Mat::eye(3, 3, CV_32FC1);
+    if(cv_points_from.size() > 0 && cv_points_to.size() > 0)
+        cv_matr = cv::findHomography(cv_points_from, cv_points_to, CV_RANSAC);
     /*
     printf("%lf,%lf,%lf\n%lf,%lf,%lf\n%lf,%lf,%lf\n",
         cv_matr.at<float>(0,0), cv_matr.at<float>(0,1), cv_matr.at<float>(0,2),

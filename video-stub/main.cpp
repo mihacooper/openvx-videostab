@@ -10,8 +10,7 @@
 #include "vx_module.h"
 #include "cv_tools.h"
 
-#define WINDOW_NAME "VideoStub"
-#define MAX_PYRAMID_LEVELS 5
+#define MAX_PYRAMID_LEVELS 8
 
 inline vx_int32 min(vx_int32 left, vx_int32 right)
 {
@@ -26,15 +25,15 @@ inline vx_int32 max(vx_int32 left, vx_int32 right)
 void InitParams(const int width, const int height, VideoStabParams& params)
 {
     params.gauss_size = 8;
-    params.fast_max_corners = 2000;
+    params.fast_max_corners = 1000;
     params.fast_thresh      = 50.f;
 
     params.optflow_estimate = 0.01f;
-    params.optflow_max_iter = 100;
-    params.optflow_term     = VX_TERM_CRITERIA_EPSILON;
+    params.optflow_max_iter = 200;
+    params.optflow_term     = VX_TERM_CRITERIA_BOTH;
     params.optflow_wnd_size = 21;
 
-    params.pyramid_scale    = VX_SCALE_PYRAMID_HALF;
+    params.pyramid_scale    = VX_SCALE_PYRAMID_ORB;
     params.pyramid_level    = min(
             floor(log(vx_float32(params.optflow_wnd_size) / vx_float32(width)) / log(params.pyramid_scale)),
             floor(log(vx_float32(params.optflow_wnd_size) / vx_float32(height)) / log(params.pyramid_scale))
@@ -55,7 +54,7 @@ int main(int argc, char* argv[])
     cv::VideoWriter  cvWriter;
 
     VXVideoStab vstub;
-    vstub.EnableDebug({VX_ZONE_ERROR});//, VX_ZONE_LOG, VX_ZONE_DELAY, VX_ZONE_IMAGE, VX_ZONE_GRAPH});
+    vstub.EnableDebug({VX_ZONE_ERROR, VX_ZONE_LOG});
     VideoStabParams vs_params;
     int width, height;
     cv::Mat cvImage, resImg;
@@ -96,7 +95,7 @@ int main(int argc, char* argv[])
         else
             cvWriter << resImg;
         counter++;
-        if(counter == 100) break;
+        //if(counter == 100) break;
         std::cout << counter << " processed frames" << std::endl;
     }
 
@@ -112,9 +111,6 @@ int main(int argc, char* argv[])
             printf("Can't convert image VX->CV. Stop!\n");
             break;
         }
-        //cv::Mat mergedImg = MergeImage(resImg, cvImage);
-        //cv::imshow(WINDOW_NAME, mergedImg);
-        //cv::waitKey(5);
         cvWriter << cvimg;
         std::cout << i << " cuted frames" << std::endl;
     }

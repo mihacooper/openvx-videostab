@@ -124,14 +124,15 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
 
     CHECK_SAVE_OPT_NODE( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 1 ), gray_image_1), "RGBtoGray_old");
     CHECK_SAVE_OPT_NODE( vxRGBtoGrayNode(m_OptFlowGraph, (vx_image)vxGetReferenceFromDelay(m_Images, 0 ), gray_image_2), "RGBtoGray_new");
+
     /*
-    vx_float32 harr_thresh = 32768.;
-    vx_float32 harr_dist = 1.1;
-    vx_float32 harr_sens = 0.15;
+    vx_float32 harr_thresh = 1000.;
+    vx_float32 harr_dist = 5.;
+    vx_float32 harr_sens = 0.050000f;
     vx_scalar harr_thresh_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &harr_thresh);
     vx_scalar harr_dist_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &harr_dist);
     vx_scalar harr_sens_s = vxCreateScalar(m_Context, VX_TYPE_FLOAT32, &harr_sens);
-    CHECK_NULL(vxHarrisCornersNode(m_OptFlowGraph, gray_image_1, harr_thresh_s, harr_dist_s, harr_sens_s, 3, 7, fast_found_corn_s, fast_num_corn_s));
+    CHECK_NULL(vxHarrisCornersNode(m_OptFlowGraph, gray_image_1, harr_thresh_s, harr_dist_s, harr_sens_s, 3, 3, fast_found_corn_s, fast_num_corn_s));
     */
     CHECK_SAVE_OPT_NODE( vxFastCornersNode(m_OptFlowGraph, gray_image_1, fast_thresh_s, vx_true_e, fast_found_corn_s, fast_num_corn_s), "FAST");
 
@@ -142,7 +143,9 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
                                        optf_estimate_s, optf_max_iter_s, optf_init_estim, params.optflow_wnd_size), "OptFlow");
     CHECK_SAVE_OPT_NODE( vxFindWarpNode(m_OptFlowGraph, fast_found_corn_s, optf_moved_corn_s, (vx_matrix)vxGetReferenceFromDelay(m_Matrices, 0 )), "FindWarp");
 
+    vx_set_debug_zone(VX_ZONE_GRAPH);
     CHECK_STATUS( vxVerifyGraph(m_OptFlowGraph) );
+    vx_clr_debug_zone(VX_ZONE_GRAPH);
 
     /*** Warp Graph***/
     m_WarpGraph = vxCreateGraph(m_Context);
