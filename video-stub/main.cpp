@@ -10,7 +10,7 @@
 #include "vx_module.h"
 #include "cv_tools.h"
 
-#define MAX_PYRAMID_LEVELS 3
+#define MAX_PYRAMID_LEVELS 4
 
 inline vx_int32 min(vx_int32 left, vx_int32 right)
 {
@@ -26,15 +26,15 @@ void InitParams(const int width, const int height, VideoStabParams& params)
 {
     params.warp_gauss.interpol = VX_INTERPOLATION_TYPE_BILINEAR;
     params.warp_gauss.gauss_size = 8;
-    params.find_warp.fast_max_corners = 500;
+    params.find_warp.fast_max_corners = 1000;
     params.find_warp.fast_thresh      = 50.f;
 
     params.find_warp.optflow_estimate = 0.01f;
     params.find_warp.optflow_max_iter = 30;
     params.find_warp.optflow_term     = VX_TERM_CRITERIA_BOTH;
-    params.find_warp.optflow_wnd_size = 21;
+    params.find_warp.optflow_wnd_size = 11;
 
-    params.find_warp.pyramid_scale    = VX_SCALE_PYRAMID_ORB;
+    params.find_warp.pyramid_scale    = VX_SCALE_PYRAMID_HALF;
     params.find_warp.pyramid_level    = min(
             floor(log(vx_float32(params.find_warp.optflow_wnd_size) / vx_float32(width)) / log(params.find_warp.pyramid_scale)),
             floor(log(vx_float32(params.find_warp.optflow_wnd_size) / vx_float32(height)) / log(params.find_warp.pyramid_scale))
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
         if(out)
             vxImages.push_back(out);
         counter++;
-        if(counter == 100) break;
+        //if(counter == 100) break;
         std::cout << counter << " processed frames" << std::endl;
     }
 
