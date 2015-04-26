@@ -1,34 +1,14 @@
 #ifndef VX_MODULE_H
 #define VX_MODULE_H
 
-#include <initializer_list>
-#include <vector>
-#include <map>
-#include <string>
-#include "VX/vx.h"
-#include "vx_debug.h"
-#include "add_kernels/add_kernels.h"
+#include "vx_common.h"
+#include "vx_findwarp_module.h"
+#include "vx_warpgauss.h"
 
 struct  VideoStabParams
 {
-    vx_size    gauss_size;
-
-    /*    FAST9    */
-    vx_float32 fast_thresh;
-    vx_uint32  fast_max_corners;
-    /***************/
-
-    /* GaussianPyramid */
-    vx_float32 pyramid_scale;
-    vx_size    pyramid_level;
-    /*******************/
-
-    /* GaussianPyramid */
-    vx_size    optflow_wnd_size;
-    vx_enum    optflow_term;
-    vx_float32 optflow_estimate;
-    vx_uint32  optflow_max_iter;
-    /*******************/
+    FindWarpParams  find_warp;
+    WarpGaussParams warp_gauss;
 };
 
 class VXVideoStab

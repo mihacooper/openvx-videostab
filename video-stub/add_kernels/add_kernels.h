@@ -32,6 +32,8 @@
 #define VX_ADD_KERNEL_NAME_MATRIX_ADD           "org.openvx.add.matrix_add"
 #define VX_ADD_KERNEL_NAME_MATRIX_INVERT        "org.openvx.add.matrix_invert"
 #define VX_ADD_KERNEL_NAME_CUT                  "org.openvx.add.cut"
+#define VX_ADD_KERNEL_NAME_CV_OPTFLOW           "org.openvx.add.cv_optflow"
+#define VX_ADD_KERNEL_NAME_CV_WARP              "org.openvx.add.cv_warp"
 
 enum vx_add_kernel_e {
     VX_ADD_KERNEL_RGB_TO_GRAY          = VX_KERNEL_BASE(VX_ID_INTEL, VX_ADD_LIBRARY) + 0x0,
@@ -41,6 +43,8 @@ enum vx_add_kernel_e {
     VX_ADD_KERNEL_MATRIX_ADD           = VX_KERNEL_BASE(VX_ID_INTEL, VX_ADD_LIBRARY) + 0x4,
     VX_ADD_KERNEL_MATRIX_INVERT        = VX_KERNEL_BASE(VX_ID_INTEL, VX_ADD_LIBRARY) + 0x5,
     VX_ADD_KERNEL_CUT                  = VX_KERNEL_BASE(VX_ID_INTEL, VX_ADD_LIBRARY) + 0x6,
+    VX_ADD_KERNEL_CV_OPTFLOW           = VX_KERNEL_BASE(VX_ID_INTEL, VX_ADD_LIBRARY) + 0x7,
+    VX_ADD_KERNEL_CV_WARP              = VX_KERNEL_BASE(VX_ID_INTEL, VX_ADD_LIBRARY) + 0x8,
 };
 
 
@@ -55,6 +59,8 @@ VX_SAMPLE_API vx_node vxMatrixMultiplyNode(vx_graph graph, vx_matrix input1, vx_
 VX_SAMPLE_API vx_node vxMatrixAddNode(vx_graph graph, vx_matrix input1, vx_matrix input2, vx_scalar coeff, vx_matrix output);
 VX_SAMPLE_API vx_node vxMatrixInvertNode(vx_graph graph, vx_matrix input, vx_matrix output);
 VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar left, vx_scalar right, vx_scalar top, vx_scalar bottom, vx_image output);
+VX_SAMPLE_API vx_node vxCVOptFlowNode(vx_graph graph, vx_image old_image, vx_image new_image, vx_array old_pnts, vx_array new_pnts);
+VX_SAMPLE_API vx_node vxCVWarpNode(vx_graph graph, vx_image input, vx_matrix matr, vx_image output);
 
 #ifdef __cplusplus
 }

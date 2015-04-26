@@ -13,7 +13,7 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
     vx_array moved_pnts = (vx_array) parameters[1];
     vx_matrix matrix    = (vx_matrix)parameters[2];
 
-    vx_size points_num = 100;
+    vx_size points_num;
     status |= vxQueryArray(def_pnts, VX_ARRAY_ATTRIBUTE_NUMITEMS, &points_num, sizeof(points_num));
     if(status != VX_SUCCESS)
     {

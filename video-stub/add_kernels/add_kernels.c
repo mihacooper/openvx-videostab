@@ -144,3 +144,43 @@ VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar left, 
     return node;
 }
 
+VX_SAMPLE_API vx_node vxCVOptFlowNode(vx_graph graph, vx_image old_image, vx_image new_image, vx_array old_pnts, vx_array new_pnts)
+{
+    vx_node node = 0;
+    vx_context context = vxGetContext((vx_reference)graph);
+    vx_status status = vxLoadKernels(context, VX_ADD_LIBRARY_NAME);
+    if (status == VX_SUCCESS)
+    {
+        vx_reference params[] = {
+            (vx_reference)old_image,
+            (vx_reference)new_image,
+            (vx_reference)old_pnts,
+            (vx_reference)new_pnts
+        };
+        node = vxCreateNodeByStructure(graph,
+                                       VX_ADD_KERNEL_CV_OPTFLOW,
+                                       params,
+                                       dimof(params));
+    }
+    return node;
+}
+
+VX_SAMPLE_API vx_node vxCVWarpNode(vx_graph graph, vx_image input, vx_matrix matr, vx_image output)
+{
+    vx_node node = 0;
+    vx_context context = vxGetContext((vx_reference)graph);
+    vx_status status = vxLoadKernels(context, VX_ADD_LIBRARY_NAME);
+    if (status == VX_SUCCESS)
+    {
+        vx_reference params[] = {
+            (vx_reference)input,
+            (vx_reference)matr,
+            (vx_reference)output,
+        };
+        node = vxCreateNodeByStructure(graph,
+                                       VX_ADD_KERNEL_CV_WARP,
+                                       params,
+                                       dimof(params));
+    }
+    return node;
+}

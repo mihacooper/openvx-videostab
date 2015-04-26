@@ -6,8 +6,8 @@ static vx_status VX_CALLBACK vxMatrixMultiplyKernel(vx_node node, vx_reference *
     vx_status status = VX_SUCCESS;
     vx_matrix matrix1 = (vx_matrix)parameters[0];
     vx_matrix matrix2 = (vx_matrix)parameters[1];
-    vx_matrix out_matr = (vx_matrix)parameters[3];
     vx_scalar scalar  = (vx_scalar)parameters[2];
+    vx_matrix out_matr = (vx_matrix)parameters[3];
 
     vx_bool use_coef = (scalar != NULL);
     vx_float32 coeff = 0.;

@@ -114,7 +114,12 @@ static vx_status VX_CALLBACK vxWarpPerspectiveRGBKernel(vx_node node, vx_referen
                         vx_float32 ab = yf - floorf(yf);
                         vx_float32 al = 1.0f - ar;
                         vx_float32 at = 1.0f - ab;
-                        *dst = tl * al * at + tr * ar * at + bl * al * ab + br * ar * ab;
+                        vx_uint8* dst8 = (vx_uint8*)dst;
+                        vx_uint8 *tl8 = (vx_uint8*)&tl, *tr8 = (vx_uint8*)&tr,
+                                 *bl8 = (vx_uint8*)&bl, *br8 = (vx_uint8*)&br;
+                        dst8[0] = tl8[0] * al * at + tr8[0] * ar * at + bl8[0] * al * ab + br8[0] * ar * ab;
+                        dst8[1] = tl8[1] * al * at + tr8[1] * ar * at + bl8[1] * al * ab + br8[1] * ar * ab;
+                        dst8[2] = tl8[2] * al * at + tr8[2] * ar * at + bl8[2] * al * ab + br8[2] * ar * ab;
                     }
                 }
             }

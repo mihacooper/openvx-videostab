@@ -28,8 +28,12 @@ export LIBRARY_DIRECTORY=${PWD}/lib
 export BUILD_DIRECTORY=${PWD}/build
 export CMAKE_TOOLS_DIR=${PWD}/cmake-tools
 #export CMAKE_FLAGS="-DCMAKE_CXX_COMPILER=/usr/bin/g++-4.8 -DCMAKE_C_COMPILER=/usr/bin/gcc-4.8"
-export CXX_FLAGS="-O2 -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings -std=c++11 -Wno-literal-suffix"
-export C_FLAGS="-O2 -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings" #-std=c99
+export PREF_FLAG="-O2"
+if [ $MAKE_DEBUG_MODE -eq 1 ]; then
+	PREF_FLAG="-g"
+fi
+export CXX_FLAGS="$PREF_FLAG -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings -std=c++11 -Wno-literal-suffix"
+export C_FLAGS="$PREF_FLAG -fPIC -Wno-unused-but-set-variable -Wno-unused-variable -Wno-write-strings" #-std=c99
 
 ############################################
 # cmake
