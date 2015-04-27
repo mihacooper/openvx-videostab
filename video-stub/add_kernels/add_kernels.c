@@ -144,3 +144,22 @@ VX_SAMPLE_API vx_node vxCutNode(vx_graph graph, vx_image input, vx_scalar left, 
     return node;
 }
 
+VX_SAMPLE_API vx_node vxGoodFeaturesNode(vx_graph graph, vx_image input, vx_array corners)
+{
+    vx_node node = 0;
+    vx_context context = vxGetContext((vx_reference)graph);
+    vx_status status = vxLoadKernels(context, VX_ADD_LIBRARY_NAME);
+    if (status == VX_SUCCESS)
+    {
+        vx_reference params[] = {
+            (vx_reference)input,
+            (vx_reference)corners,
+        };
+        node = vxCreateNodeByStructure(graph,
+                                       VX_ADD_KERNEL_GOOD_FEATURES,
+                                       params,
+                                       dimof(params));
+    }
+    return node;
+}
+
