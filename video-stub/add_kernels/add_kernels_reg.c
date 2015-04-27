@@ -8,6 +8,8 @@ extern vx_kernel_description_t add_matrix_add_kernel;
 extern vx_kernel_description_t add_matrix_invert_kernel;
 extern vx_kernel_description_t add_cut_kernel;
 extern vx_kernel_description_t good_features_kernel;
+extern vx_kernel_description_t add_cv_optflow_kernel;
+extern vx_kernel_description_t add_cv_warp_kernel;
 
 static vx_kernel_description_t* add_kernels[] = {
     &add_rgb_to_gray_kernel,
@@ -17,7 +19,9 @@ static vx_kernel_description_t* add_kernels[] = {
     &add_matrix_add_kernel,
     &add_matrix_invert_kernel,
     &add_cut_kernel,
-    &good_features_kernel
+    &good_features_kernel,
+    &add_cv_optflow_kernel,
+    &add_cv_warp_kernel
 };
 
 static vx_uint32 num_add_kernels = dimof(add_kernels);
