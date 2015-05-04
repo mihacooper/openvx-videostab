@@ -1,4 +1,4 @@
-#include "vx_warpgauss.h"
+#include "vx_pipelines.h"
 
 #define CHECK_SAVE_WARP_NODE(var, name) CHECK_SAVE_NODE(var, name, nodes_map)
 
@@ -23,17 +23,12 @@ static vx_matrix CreateEyeMatrix(vx_context context)
     return matrix;
 }
 
-vx_status WarpGaussGraph(vx_context context, vx_graph& graph, vx_image input, vx_image output, vx_matrix* matrices,
+vx_status MatrixGaussGraph(vx_context context, vx_graph& graph, vx_uint32 width, vx_uint32 height, vx_matrix* matrices,
                          vx_matrix& result_matr, WarpGaussParams& params, std::map<std::string, vx_node>& nodes_map)
 {
     CHECK_NULL(context);
-    //CHECK(dimof(matrices) != (params.gauss_size * 2));
-    //CHECK(dimof(params.gauss_coeffs) != (params.gauss_size * 2 + 1));
 
     vx_size matr_num = params.gauss_size * 2;
-    vx_uint32 width, height;
-    vxQueryImage(input, VX_IMAGE_ATTRIBUTE_WIDTH,  &width,  sizeof(width));
-    vxQueryImage(input, VX_IMAGE_ATTRIBUTE_HEIGHT, &height, sizeof(height));
 
     graph = vxCreateGraph(context);
     CHECK_NULL(graph);
@@ -81,9 +76,17 @@ vx_status WarpGaussGraph(vx_context context, vx_graph& graph, vx_image input, vx
         CHECK_NULL(vxMatrixAddNode(graph, prev_mul_matr, prev_sum_matr, coeff_s, next_matr));
         prev_sum_matr = next_matr;
     }
+    return VX_SUCCESS;
+}
+
+vx_status WarpGraph(vx_context context, vx_graph& graph, vx_image input, vx_image output, vx_matrix matrix,
+                         WarpGaussParams& params, std::map<std::string, vx_node>& nodes_map)
+{
+    graph = vxCreateGraph(context);
+    CHECK_NULL(graph);
     vx_scalar inter_s = vxCreateScalar(context, VX_TYPE_ENUM, &params.interpol);
     vx_matrix inv_matr = vxCreateMatrix(context, VX_TYPE_FLOAT32, 3, 3);
-    CHECK_NULL(vxMatrixInvertNode(graph, prev_sum_matr, inv_matr));
+    CHECK_NULL(vxMatrixInvertNode(graph, matrix, inv_matr));
     vx_node warp_node = vxWarpPerspectiveRGBNode(graph, input, inv_matr, inter_s, output);
     CHECK_SAVE_WARP_NODE(warp_node, "WarpPerspective");
     vx_border_mode_t border = {VX_BORDER_MODE_CONSTANT, 0};

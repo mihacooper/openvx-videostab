@@ -33,6 +33,9 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
     if(m_Context == NULL)
         return VX_FAILURE;
 
+    m_width = width;
+    m_height = height;
+    m_params = params;
     vx_status status;
     vx_int32 gauss_size = params.warp_gauss.gauss_size;
     m_NumImages = gauss_size * 2 + 1;
@@ -77,19 +80,39 @@ vx_status VXVideoStab::CreatePipeline(const vx_uint32 width, const vx_uint32 hei
         matrices[i] = (vx_matrix)vxGetReferenceFromDelay(m_Matrices, i);
 
     m_ResMatr = vxCreateMatrix(m_Context, VX_TYPE_FLOAT32, 3, 3);
+    vx_image warpedImage = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
     m_OutImage = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
-    status = WarpGaussGraph(m_Context, m_WarpGraph,
-                (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2),
-                m_OutImage,
+
+    status = MatrixGaussGraph(m_Context, m_MatrGaussGraph, width, height,
                 matrices,
                 m_ResMatr,
                 params.warp_gauss,
                 m_WarpNodes);
     if(status != VX_SUCCESS)
     {
-        VX_PRINT(VX_ZONE_ERROR, "Can't create WarpGauss graph\n");
+        VX_PRINT(VX_ZONE_ERROR, "Can't create MatrixGauss graph\n");
         return VX_FAILURE;
     }
+
+    status = WarpGraph(m_Context, m_WarpGraph,
+                (vx_image)vxGetReferenceFromDelay(m_Images, m_NumImages / 2),
+                warpedImage,
+                m_ResMatr,
+                params.warp_gauss,
+                m_WarpNodes);
+    if(status != VX_SUCCESS)
+    {
+        VX_PRINT(VX_ZONE_ERROR, "Can't create Warp graph\n");
+        return VX_FAILURE;
+    }
+
+    status = CutGraph(m_Context, m_CutGraph, warpedImage, m_OutImage, width, height, params.scale);
+    if(status != VX_SUCCESS)
+    {
+        VX_PRINT(VX_ZONE_ERROR, "Can't create Cut graph\n");
+        return VX_FAILURE;
+    }
+
     delete[] params.warp_gauss.gauss_coeffs;
     return VX_SUCCESS;
     /*****************/
@@ -133,114 +156,6 @@ vx_image VXVideoStab::CopyImage(vx_image input)
     return output;
 }
 
-void VXVideoStab::TransformPerspective(vx_uint32& x, vx_uint32& y, vx_int32& tx, vx_int32& ty, const vx_float32 m[])
-{
-    vx_float32 z = x * m[6] + y * m[7] + m[8];
-    tx = (x * m[0] + y * m[1] + m[2]) / z;
-    ty = (x * m[3] + y * m[4] + m[5]) / z;
-}
-
-struct Point
-{
-    vx_int32 x,y;
-};
-
-vx_int32 VXVideoStab::DefineValidRect(vx_image image, vx_matrix matrix)
-{
-    vx_rectangle_t rect = {0, 0, 0, 0}, mrect;
-    vx_float32 matr[9];
-    Point pnt[4];
-    vx_uint32 width, height;
-    vxQueryImage(image, VX_IMAGE_ATTRIBUTE_WIDTH,  &width, sizeof(width));
-    vxQueryImage(image, VX_IMAGE_ATTRIBUTE_HEIGHT, &height, sizeof(height));
-    rect.end_x = width;
-    rect.end_y = height;
-    memcpy(&mrect, &rect, sizeof(mrect));
-
-    vxAccessMatrix(matrix, matr);
-
-    TransformPerspective(rect.start_x, rect.start_y, pnt[0].x, pnt[0].y, matr);
-    TransformPerspective(rect.end_x,   rect.start_y, pnt[1].x, pnt[1].y, matr);
-    TransformPerspective(rect.end_x,   rect.end_y,   pnt[2].x, pnt[2].y, matr);
-    TransformPerspective(rect.start_x, rect.end_y,   pnt[3].x, pnt[3].y, matr);
-
-    vx_int32 max_area = 0;
-    #define AREA_X(x) ((x)*(x) * height)/width
-    #define AREA_Y(y) ((y)*(y) * width)/height
-    #define max(a, b) (a) > (b) ? (a) : (b);
-
-    if(pnt[0].x > 0 && pnt[0].y > 0)
-    {
-        max_area = max(AREA_X(pnt[0].x), max_area);
-        max_area = max(AREA_Y(pnt[0].y), max_area);
-    }
-    if(pnt[1].x < width && pnt[1].y > 0)
-    {
-        max_area = max(AREA_X(width - pnt[1].x), max_area);
-        max_area = max(AREA_Y(pnt[1].y), max_area);
-    }
-    if(pnt[2].x < width && pnt[2].y < height)
-    {
-        max_area = max(AREA_X(width - pnt[2].x), max_area);
-        max_area = max(AREA_Y(height - pnt[2].y), max_area);
-    }
-    if(pnt[3].x > 0 && pnt[3].y < height)
-    {
-        max_area = max(AREA_X(pnt[3].x), max_area);
-        max_area = max(AREA_Y(height - pnt[3].y), max_area);
-    }
-
-
-    vxCommitMatrix(matrix, matr);
-    return max_area;
-}
-
-vx_status VXVideoStab::EnableCuting(vx_uint32 width, vx_uint32 height)
-{
-   vx_float32 prop = (vx_float32)(width) / height;
-   vx_uint32 sub_height = sqrt((vx_float32)m_MaxArea / prop);
-   vx_uint32 sub_width  = sub_height * prop;
-   vx_rectangle_t rect;
-   rect.start_x = sub_width;
-   rect.start_y = sub_height;
-   rect.end_x   = width - sub_width;
-   rect.end_y   = height - sub_height;
-
-   m_CutGraph = vxCreateGraph(m_Context);
-   vx_image chan[3], scaled[3];
-   vx_enum chanels[] = {VX_CHANNEL_R, VX_CHANNEL_G, VX_CHANNEL_B};
-   vx_scalar sx = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.start_x);
-   vx_scalar sy = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.start_y);
-   vx_scalar ex = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.end_x);
-   vx_scalar ey = vxCreateScalar(m_Context, VX_TYPE_UINT32, &rect.end_y);
-   vx_image cuted = vxCreateVirtualImage(m_CutGraph, rect.end_x - rect.start_x, rect.end_y - rect.start_y, VX_DF_IMAGE_RGB);
-   vx_image fakeCutInput = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
-   m_CutedImage = vxCreateImage(m_Context, width, height, VX_DF_IMAGE_RGB);
-
-   m_CutNode = vxCutNode(m_CutGraph, fakeCutInput , sx, sy, ex, ey, cuted);
-   for(int i = 0; i < 3; i++)
-   {
-       chan[i] = vxCreateVirtualImage(m_CutGraph, rect.end_x - rect.start_x, rect.end_y - rect.start_y, VX_DF_IMAGE_U8);
-       scaled[i] = vxCreateVirtualImage(m_CutGraph, width, height, VX_DF_IMAGE_U8);
-       vxChannelExtractNode(m_CutGraph, cuted, chanels[i], chan[i]);
-       vxScaleImageNode(m_CutGraph, chan[i], scaled[i], VX_INTERPOLATION_TYPE_NEAREST_NEIGHBOR);
-   }
-   vxChannelCombineNode(m_CutGraph, scaled[0], scaled[1], scaled[2], NULL, m_CutedImage);
-
-   CHECK_STATUS(vxVerifyGraph(m_CutGraph));
-   return VX_SUCCESS;
-}
-
-vx_image VXVideoStab::CutImage(vx_image input)
-{
-    vxSetParameterByIndex(m_CutNode, 0, (vx_reference)input);
-    if(vxProcessGraph(m_CutGraph) != VX_SUCCESS)
-    {
-       printf("Error: process graph failure");
-    }
-    return m_CutedImage;
-}
-
 vx_image VXVideoStab::Calculate()
 {
     if(!m_ImageAdded)
@@ -259,14 +174,29 @@ vx_image VXVideoStab::Calculate()
     vx_image ret = NULL;
     if(m_CurImageId == m_NumImages)
     {
+        if(vxProcessGraph(m_MatrGaussGraph) != VX_SUCCESS)
+        {
+            VX_PRINT(VX_ZONE_ERROR, "MatrixGauss graph process error!\n");
+            return NULL;
+        }
+        if(ModifyMatrix(m_ResMatr, m_width, m_height, m_params.scale) != VX_SUCCESS)
+        {
+            VX_PRINT(VX_ZONE_ERROR, "Modifying matrix error!\n");
+            return NULL;
+        }
         if(vxProcessGraph(m_WarpGraph) != VX_SUCCESS)
         {
             VX_PRINT(VX_ZONE_ERROR, "Warp graph process error!\n");
             return NULL;
         }
+        if(vxProcessGraph(m_CutGraph) != VX_SUCCESS)
+        {
+            VX_PRINT(VX_ZONE_ERROR, "Cut graph process error!\n");
+            return NULL;
+        }
         ret = CopyImage(m_OutImage);
-        vx_int32 area = DefineValidRect(m_OutImage, m_ResMatr);
-        m_MaxArea = max(m_MaxArea, area);
+        //vx_int32 area = DefineValidRect(m_OutImage, m_ResMatr);
+        //m_MaxArea = max(m_MaxArea, area);
         m_CurImageId--;
     }
     else

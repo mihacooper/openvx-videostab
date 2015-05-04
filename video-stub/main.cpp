@@ -24,6 +24,7 @@ inline vx_int32 max(vx_int32 left, vx_int32 right)
 
 void InitParams(const int width, const int height, VideoStabParams& params)
 {
+    params.scale = 0.85;
     params.warp_gauss.interpol = VX_INTERPOLATION_TYPE_BILINEAR;
     params.warp_gauss.gauss_size = 8;
     params.find_warp.fast_max_corners = 1000;
@@ -58,13 +59,12 @@ int main(int argc, char* argv[])
     vstub.EnableDebug({VX_ZONE_ERROR});
     VideoStabParams vs_params;
     int width, height;
-    cv::Mat cvImage, resImg;
+    cv::Mat cvImage;
     bool first = true;
     int counter = 0;
     while(true)
     {
         cvReader >> cvImage;
-        cvImage.copyTo(resImg);
         if(cvImage.empty())
         {
             printf("End of video!\n");
@@ -85,33 +85,24 @@ int main(int argc, char* argv[])
             first = false;
         }
         vx_image vxImage = vstub.NewImage();
-        if(!CV2VX(vxImage, resImg))
+        if(!CV2VX(vxImage, cvImage))
         {
             printf("Can't convert image CV->VX. Stop!\n");
             break;
         }
         vx_image out = vstub.Calculate();
         if(out)
-            vxImages.push_back(out);
+        {
+            if(!VX2CV(out, cvImage))
+            {
+                printf("Can't convert image VX->CV. Stop!\n");
+                break;
+            }
+            cvWriter << cvImage;
+        }
         counter++;
         //if(counter == 100) break;
         std::cout << counter << " processed frames" << std::endl;
-    }
-
-    vstub.EnableCuting(width, height);
-
-    cv::Mat cvimg;
-    for(int i = 0; i < vxImages.size(); i++)
-    {
-        vx_image img = vxImages[i];
-        vx_image cuted = vstub.CutImage(img);
-        if(!VX2CV(cuted, cvimg))
-        {
-            printf("Can't convert image VX->CV. Stop!\n");
-            break;
-        }
-        cvWriter << cvimg;
-        std::cout << i << " cuted frames" << std::endl;
     }
 
     cvWriter.release();
