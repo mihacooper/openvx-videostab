@@ -2,11 +2,11 @@
 #define VX_MODULE_H
 
 #include "vx_common.h"
-#include "vx_findwarp_module.h"
-#include "vx_warpgauss.h"
+#include "vx_pipelines.h"
 
 struct  VideoStabParams
 {
+    vx_float32      scale;
     FindWarpParams  find_warp;
     WarpGaussParams warp_gauss;
 };
@@ -33,7 +33,9 @@ private:
 
     vx_context m_Context;
     vx_graph   m_OptFlowGraph;
+    vx_graph   m_MatrGaussGraph;
     vx_graph   m_WarpGraph;
+    vx_graph   m_CutGraph;
     vx_delay   m_Images;
     vx_delay   m_Matrices;
     vx_image   m_OutImage;
@@ -45,9 +47,8 @@ private:
     vx_bool    m_ImageAdded;
     vx_int32   m_MaxArea;
 
-    vx_graph   m_CutGraph;
-    vx_image   m_CutedImage;
-    vx_node    m_CutNode;
+    VideoStabParams m_params;
+    vx_uint32 m_width, m_height;
     std::map<std::string, vx_node> m_OptFlowNodes;
     std::map<std::string, vx_node> m_WarpNodes;
 };
