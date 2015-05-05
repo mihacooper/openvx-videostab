@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
             InitParams(width, height, vs_params);
             if(vstub.CreatePipeline(width, height, vs_params) != VX_SUCCESS)
                 break;
-            if(!cvWriter.open(argv[2], cvReader.get(CV_CAP_PROP_FOURCC), cvReader.get(CV_CAP_PROP_FPS), cv::Size(width, height)))
+            if(!cvWriter.open(argv[2], CV_FOURCC('X', 'V', 'I', 'D')/*cvReader.get(CV_CAP_PROP_FOURCC)*/, cvReader.get(CV_CAP_PROP_FPS), cv::Size(width, height)))
             {
                 std::cout << " Can't open output video file!" << std::endl;
                 break;
@@ -98,13 +98,13 @@ int main(int argc, char* argv[])
         std::cout << counter << " processed frames" << std::endl;
     }
 
-    vstub.EnableCuting(width, height);
+    //vstub.EnableCuting(width, height);
 
     cv::Mat cvimg;
     for(int i = 0; i < vxImages.size(); i++)
     {
         vx_image img = vxImages[i];
-        vx_image cuted = vstub.CutImage(img);
+        vx_image cuted = img;//vstub.CutImage(img);
         if(!VX2CV(cuted, cvimg))
         {
             printf("Can't convert image VX->CV. Stop!\n");
