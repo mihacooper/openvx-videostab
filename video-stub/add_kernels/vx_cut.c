@@ -21,8 +21,6 @@ static vx_status VX_CALLBACK vxCutKernel(vx_node node, vx_reference *parameters,
     }
     rect.start_x = pnts[0]; rect.start_y = pnts[1];
     rect.end_x = pnts[2]; rect.end_y = pnts[3];
-    printf("\t%d, %d, %d, %d\n", pnts[0], pnts[1], pnts[2], pnts[3]);
-    //status |= vxGetValidRegionImage(input, &rect);
     status |= vxGetValidRegionImage(output, &dst_rect);
     status |= vxAccessImagePatch(input, &rect, 0, &src_addr, (void **)&src_buff, VX_READ_AND_WRITE);
     status |= vxAccessImagePatch(output, &dst_rect, 0, &dst_addr, (void **)&dst_buff, VX_READ_AND_WRITE);

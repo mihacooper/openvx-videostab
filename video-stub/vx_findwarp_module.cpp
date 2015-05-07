@@ -1,9 +1,7 @@
 #include "vx_pipelines.h"
 
-#define CHECK_SAVE_OPT_NODE(var, name) CHECK_SAVE_NODE(var, name, nodes_map)
-
 vx_status FindWarpGraph(vx_context context, vx_graph& graph,vx_image from_image, vx_image to_image,
-                        vx_matrix matrix, FindWarpParams& params, std::map<std::string, vx_node>& nodes_map)
+                        vx_matrix matrix, FindWarpParams& params)
 {
     CHECK_NULL(context);
 
@@ -52,14 +50,8 @@ vx_status FindWarpGraph(vx_context context, vx_graph& graph,vx_image from_image,
                     optf_estimate_s, optf_max_iter_s, optf_init_estim, params.optflow_wnd_size);
     node[6] = vxFindWarpNode(graph, fast_found_corn_s, optf_moved_corn_s, matrix);
 
-    CHECK_SAVE_OPT_NODE( node[0], "RGBtoGray_old");
-    CHECK_SAVE_OPT_NODE( node[1], "RGBtoGray_new");
-    CHECK_SAVE_OPT_NODE( node[2], "FAST");
-
-    CHECK_SAVE_OPT_NODE( node[3], "GaussianPyr_old");
-    CHECK_SAVE_OPT_NODE( node[4], "GaussianPyr_new");
-    CHECK_SAVE_OPT_NODE( node[5], "OptFlow");
-    CHECK_SAVE_OPT_NODE( node[6], "FindWarp");
+    for(int i = 0; i < dimof(node); i++)
+        CHECK_NULL(node[i]);
 
     CHECK_STATUS( vxVerifyGraph(graph) );
     return VX_SUCCESS;

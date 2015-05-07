@@ -75,12 +75,6 @@ static vx_status VX_CALLBACK vxFindWarpKernel(vx_node node, vx_reference *parame
         cv_matr = cv::findHomography(cv_points_from, cv_points_to, CV_RANSAC);
     else
         VX_PRINT(VX_ZONE_WARNING, "Number of points is equal to zero!\n");
-    /*
-    printf("%lf,%lf,%lf\n%lf,%lf,%lf\n%lf,%lf,%lf\n",
-        cv_matr.at<float>(0,0), cv_matr.at<float>(0,1), cv_matr.at<float>(0,2),
-        cv_matr.at<float>(1,0), cv_matr.at<float>(1,1), cv_matr.at<float>(1,2),
-        cv_matr.at<float>(2,0), cv_matr.at<float>(2,1), cv_matr.at<float>(2,2));
-    */
     vx_float32 matr_buff[9];
     status |= vxAccessMatrix(matrix, (void*)matr_buff);
     memcpy(matr_buff, cv_matr.data, sizeof(vx_float32) * 9);

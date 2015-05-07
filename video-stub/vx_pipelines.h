@@ -10,13 +10,11 @@ struct  WarpGaussParams
     vx_float32* gauss_coeffs;
     vx_uint32   gauss_size;
     vx_enum     interpol;
+    vx_float32  scale;
 };
 
-vx_status MatrixGaussGraph(vx_context context, vx_graph& graph, vx_uint32 width, vx_uint32 height, vx_matrix* matrices,
-                         vx_matrix& result_matr, WarpGaussParams& params, std::map<std::string, vx_node>& nodes_map);
-
-vx_status WarpGraph(vx_context context, vx_graph& graph, vx_image input, vx_image output, vx_matrix matrix,
-                         WarpGaussParams& params, std::map<std::string, vx_node>& nodes_map);
+vx_status WarpGaussAndCutGraph(vx_context context, vx_graph& graph, vx_image input, vx_image output,
+                         vx_matrix* matrices, WarpGaussParams& params);
 
 struct  FindWarpParams
 {
@@ -39,10 +37,6 @@ struct  FindWarpParams
 };
 
 vx_status FindWarpGraph(vx_context context, vx_graph& graph,vx_image from_image, vx_image to_image,
-                        vx_matrix matrix, FindWarpParams& params, std::map<std::string, vx_node>& nodes_map);
-
-vx_status CutGraph(vx_context context, vx_graph& graph, vx_image input, vx_image output, vx_uint32 width, vx_uint32 height, vx_float32 scale);
-
-vx_status ModifyMatrix(vx_matrix matr, vx_uint32 width, vx_uint32 height, vx_float32 scale);
+                        vx_matrix matrix, FindWarpParams& params);
 
 #endif // VX_WARPGAUSS_H

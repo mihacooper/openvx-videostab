@@ -31,13 +31,6 @@
         } \
     }
 
-#define CHECK_SAVE_NODE(var, name, cont) \
-    { \
-        vx_node __node = (var);\
-        CHECK_NULL(__node);\
-        (cont).insert(std::make_pair(name, __node));\
-    }
-
 #define CHECK_STATUS(var) \
     { \
         if( (var) != VX_SUCCESS ) \

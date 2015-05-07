@@ -24,7 +24,7 @@ inline vx_int32 max(vx_int32 left, vx_int32 right)
 
 void InitParams(const int width, const int height, VideoStabParams& params)
 {
-    params.scale = 0.85;
+    params.warp_gauss.scale = 0.85;
     params.warp_gauss.interpol = VX_INTERPOLATION_TYPE_BILINEAR;
     params.warp_gauss.gauss_size = 8;
     params.find_warp.fast_max_corners = 1000;
@@ -43,6 +43,8 @@ void InitParams(const int width, const int height, VideoStabParams& params)
     params.find_warp.pyramid_level = max(1, min(params.find_warp.pyramid_level, MAX_PYRAMID_LEVELS));
 }
 
+#define DEBUG_ZONES {VX_ZONE_ERROR}
+
 int main(int argc, char* argv[])
 {
     if(argc < 2)
@@ -50,17 +52,30 @@ int main(int argc, char* argv[])
         printf("Use ./%s <input_video> <output_video>\n", argv[0]);
         return 0;
     }
-    std::vector<vx_image> vxImages;
-    vxImages.reserve(500);
-    cv::VideoCapture cvReader(argv[1]);
-    cv::VideoWriter  cvWriter;
+    cv::VideoCapture cvReader(argv[1]); // video reader
+    cv::VideoWriter  cvWriter;          // video writer
+    VXVideoStab      vstub;             // stabilizator
+    VideoStabParams  vs_params;         // params of stabilization
 
-    VXVideoStab vstub;
-    vstub.EnableDebug({VX_ZONE_ERROR});
-    VideoStabParams vs_params;
-    int width, height;
+    int width  = cvReader.get(CV_CAP_PROP_FRAME_WIDTH);
+    int height = cvReader.get(CV_CAP_PROP_FRAME_HEIGHT);
+    int frames = cvReader.get(CV_CAP_PROP_FRAME_COUNT);
+    /* Init video writer */
+    if(!cvWriter.open(argv[2], CV_FOURCC('X', 'V', 'I', 'D'), cvReader.get(CV_CAP_PROP_FPS), cv::Size(width, height)))
+    {
+        std::cout << " Can't open output video file!" << std::endl;
+        return 1;
+    }
+    /* Init parameters of stabilization */
+    InitParams(width, height, vs_params);
+    /* Build pipeline of stabilization */
+    if(vstub.CreatePipeline(width, height, vs_params) != VX_SUCCESS)
+        return 1;
+    /* Enable debug zones */
+    vstub.EnableDebug(DEBUG_ZONES);
+    /**********************/
+
     cv::Mat cvImage;
-    bool first = true;
     int counter = 0;
     while(true)
     {
@@ -70,44 +85,18 @@ int main(int argc, char* argv[])
             printf("End of video!\n");
             break;
         }
-        if(first)
-        {
-            width = cvImage.cols;
-            height = cvImage.rows;
-            InitParams(width, height, vs_params);
-            if(vstub.CreatePipeline(width, height, vs_params) != VX_SUCCESS)
-                break;
-            if(!cvWriter.open(argv[2], CV_FOURCC('X', 'V', 'I', 'D'), cvReader.get(CV_CAP_PROP_FPS), cv::Size(width, height)))
-            {
-                std::cout << " Can't open output video file!" << std::endl;
-                break;
-            }
-            first = false;
-        }
         vx_image vxImage = vstub.NewImage();
-        if(!CV2VX(vxImage, cvImage))
-        {
-            printf("Can't convert image CV->VX. Stop!\n");
-            break;
-        }
+        if(!CV2VX(vxImage, cvImage)) break;
         vx_image out = vstub.Calculate();
         if(out)
         {
-            if(!VX2CV(out, cvImage))
-            {
-                printf("Can't convert image VX->CV. Stop!\n");
-                break;
-            }
+            if(!VX2CV(out, cvImage)) break;
             cvWriter << cvImage;
         }
         counter++;
-        //if(counter == 100) break;
-        std::cout << counter << " processed frames" << std::endl;
+        std::cout << counter << " from " << frames <<" processed frames" << std::endl;
     }
-
     cvWriter.release();
-    printf("**** Performance ****\n");
-    vstub.PrintPerf();
-    printf("*********************\n");
+    vstub.DisableDebug(DEBUG_ZONES);
     return 0;
 }

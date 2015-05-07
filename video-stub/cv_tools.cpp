@@ -73,7 +73,10 @@ bool Converter(vx_image vxImage, cv::Mat& cvImage, ConvKernel kernel)
 
 bool CV2VX(vx_image vxImage, cv::Mat cvImage)
 {
-    return Converter(vxImage, cvImage, &_CV2VX);
+    bool ret = Converter(vxImage, cvImage, &_CV2VX);
+    if(!ret)
+        printf("Can't convert image CV->VX!\n");
+    return ret;
 }
 
 bool VX2CV(vx_image vxImage, cv::Mat& cvImage)
@@ -85,7 +88,10 @@ bool VX2CV(vx_image vxImage, cv::Mat& cvImage)
         vxQueryImage(vxImage, VX_IMAGE_ATTRIBUTE_HEIGHT, &height, sizeof(height));
         cvImage.create(height, width, CV_8UC3);
     }
-    return Converter(vxImage, cvImage, &_VX2CV);
+    bool ret = Converter(vxImage, cvImage, &_VX2CV);
+    if(!ret)
+        printf("Can't convert image VX->CV!\n");
+    return ret;
 }
 
 cv::Mat MergeImage(cv::Mat up, cv::Mat down)

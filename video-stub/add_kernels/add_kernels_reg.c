@@ -7,9 +7,8 @@ extern vx_kernel_description_t add_matrix_multiply_kernel;
 extern vx_kernel_description_t add_matrix_add_kernel;
 extern vx_kernel_description_t add_matrix_invert_kernel;
 extern vx_kernel_description_t add_cut_kernel;
-extern vx_kernel_description_t good_features_kernel;
-extern vx_kernel_description_t add_cv_optflow_kernel;
-extern vx_kernel_description_t add_cv_warp_kernel;
+extern vx_kernel_description_t add_modify_matrix_kernel;
+
 
 static vx_kernel_description_t* add_kernels[] = {
     &add_rgb_to_gray_kernel,
@@ -19,14 +18,12 @@ static vx_kernel_description_t* add_kernels[] = {
     &add_matrix_add_kernel,
     &add_matrix_invert_kernel,
     &add_cut_kernel,
-    &good_features_kernel,
-    &add_cv_optflow_kernel,
-    &add_cv_warp_kernel
+    &add_modify_matrix_kernel,
 };
 
 static vx_uint32 num_add_kernels = dimof(add_kernels);
 
-VX_SAMPLE_API vx_status vxPublishKernels(vx_context context)
+vx_status vxPublishKernels(vx_context context)
 {
     vx_status status = VX_SUCCESS;
     int i = 0, p = 0;
