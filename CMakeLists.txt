@@ -10,4 +10,4 @@ if($ENV{MAKE_DEBUG_MODE})
 endif()
 
 add_subdirectory(openvx-lib)
-add_subdirectory(video-stub)
+add_subdirectory(video-stab)
