@@ -1,9 +1,9 @@
 # Openvx Video Stabilization sample
-###OpenVX library
+### OpenVX library
 * OpenVX implementation taken from  [Khronos Group](https://www.khronos.org/openvx/).
 
-###Building
+### Building
 * Use shell script *build.sh*(with 'debug' flag for debuging).
 
-###Run
+### Run
 * Use: *vx_videostab \<input_video\> \<output_video\>*.
